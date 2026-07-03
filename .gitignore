@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build
+bin/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+api/bin/
+api/tmp/
+api/coverage.out
+api/coverage.html
+
+# Docs
+api/docs/
+
+# Logs
+*.log
