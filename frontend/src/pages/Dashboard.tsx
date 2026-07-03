@@ -6,15 +6,9 @@ import {
   FileText,
   Activity,
 } from 'lucide-react'
-import Header from '@/components/Header'
 
 export default function Dashboard() {
   const { user } = useAuth()
-
-  // const handleLogout = async () => {
-  //   await logout()
-  //   navigate('/login')
-  // }
 
   const stats = [
     {
@@ -60,7 +54,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <Header user={user}/>
+      {/* <Header user={user}/> */}
       
       {/* Main Content */}
       <main className=''>

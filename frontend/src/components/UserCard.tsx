@@ -50,11 +50,16 @@ export default function UserCard({ user, onEdit, onToggleActive, onDelete }: Use
                 <Badge variant={getRoleBadgeVariant(user.role)} className="text-xs">
                   {getRoleLabel(user.role)}
                 </Badge>
-                {!user.is_active && (
-                  <Badge variant="destructive" className="text-xs">
+                {!user.is_active ? (
+                   <Badge variant="destructive" className="text-xs">
                     Desativado
                   </Badge>
-                )}
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    Ativo
+                  </Badge>
+                )
+                }
               </div>
             </div>
           </div>

@@ -109,4 +109,9 @@ export const usersService = {
     request<{ message: string }>(`/users/${id}`, {
       method: 'DELETE',
     }),
+
+  toggleActive: (id: string) =>
+    request<UserInfo>(`/users/${id}/toggle-active`, {
+      method: 'PATCH',
+    }),
 }

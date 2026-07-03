@@ -200,6 +200,36 @@ func (r *UserRepository) SoftDelete(id uuid.UUID) error {
 	return nil
 }
 
+func (r *UserRepository) ToggleActive(id uuid.UUID, currentUserID uuid.UUID) (*models.User, error) {
+	if id == currentUserID {
+		return nil, fmt.Errorf("cannot deactivate yourself")
+	}
+
+	user, err := r.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	err = r.db.QueryRow(`
+		UPDATE users SET is_active=NOT is_active, updated_at=NOW()
+		WHERE id=$1 AND deleted_at IS NULL
+		RETURNING id, name, surname, email, password_hash, role, gender, avatar, is_active, deleted_at, created_at, updated_at`,
+		id,
+	).Scan(
+		&user.ID, &user.Name, &user.Surname, &user.Email,
+		&user.PasswordHash, &user.Role, &user.Gender, &user.Avatar,
+		&user.IsActive, &user.DeletedAt, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to toggle user active status: %w", err)
+	}
+
+	return user, nil
+}
+
 func generateAvatar(email, gender string) string {
 	style := "adventurer"
 	if gender == "female" {

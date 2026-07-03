@@ -19,6 +19,7 @@ import {
   Menu,
   ChevronLeft,
 } from 'lucide-react'
+import Header from './Header'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -121,6 +122,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <SidebarContent mobile />
         </SheetContent>
       </Sheet>
+
+      {/* Header */}
+      <Header user={user}/>
 
       {/* Desktop sidebar */}
       <aside

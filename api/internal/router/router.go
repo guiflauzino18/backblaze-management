@@ -57,6 +57,7 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 				admin.POST("", userHandler.Create)
 				admin.PUT("/:id", userHandler.Update)
 				admin.DELETE("/:id", userHandler.Delete)
+				admin.PATCH("/:id/toggle-active", userHandler.ToggleActive)
 			}
 		}
 	}

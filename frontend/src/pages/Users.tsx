@@ -3,7 +3,6 @@ import { Search, Plus, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import UserCard from '@/components/UserCard'
 import UserFormDialog from '@/components/UserFormDialog'
 import { usersService, type UserInfo } from '@/services/users'
@@ -17,11 +16,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import Header from '@/components/Header'
-import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function Users() {
-  const { user } = useAuth()
+  const { success, error: showError } = useToast()
   const [users, setUsers] = useState<UserInfo[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -37,7 +35,6 @@ export default function Users() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadUsers = async () => {
-    
     setIsLoading(true)
     setError('')
     try {
@@ -45,7 +42,8 @@ export default function Users() {
       setUsers(response.data)
       setTotal(response.total)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar usuários')
+      const msg = err instanceof Error ? err.message : 'Erro ao carregar usuários'
+      showError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -78,8 +76,10 @@ export default function Users() {
       await usersService.delete(deleteUser.id)
       setDeleteUser(null)
       loadUsers()
+      success('Usuário excluído com sucesso!')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir usuário')
+      const msg = err instanceof Error ? err.message : 'Erro ao excluir usuário'
+      showError(msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -89,14 +89,13 @@ export default function Users() {
     if (!toggleUser) return
     setIsSubmitting(true)
     try {
-      await usersService.update(toggleUser.id, {
-        // Toggle is_active by updating with opposite value
-        // Note: The backend should handle this
-      })
+      await usersService.toggleActive(toggleUser.id)
       setToggleUser(null)
       loadUsers()
+      success(toggleUser.is_active ? 'Usuário desabilitado com sucesso!' : 'Usuário ativado com sucesso!')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar usuário')
+      const msg = err instanceof Error ? err.message : 'Erro ao atualizar usuário'
+      showError(msg)
     } finally {
       setIsSubmitting(false)
     }
@@ -104,15 +103,15 @@ export default function Users() {
 
   const handleFormSuccess = () => {
     loadUsers()
+    success('Usuário salvo com sucesso!')
   }
 
   const totalPages = Math.ceil(total / 10)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <Header user={user}/>
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 border-b">
         <h2 className="text-2xl font-heading font-bold">Usuários</h2>
         <p className="text-muted-foreground">
           Gerencie os usuários do sistema
@@ -140,9 +139,9 @@ export default function Users() {
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Card className="mb-6 p-4 bg-destructive/10 border-destructive">
+          <p className="text-sm text-destructive">{error}</p>
+        </Card>
       )}
 
       {/* Users Grid */}
