@@ -17,7 +17,6 @@ import {
   HardDrive,
   LogOut,
   Menu,
-  User,
   ChevronLeft,
 } from 'lucide-react'
 

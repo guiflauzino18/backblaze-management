@@ -1,4 +1,6 @@
-import { api, type UserInfo } from './api'
+import type { UserInfo } from './api'
+
+export type { UserInfo } from './api'
 
 export interface CreateUserRequest {
   name: string

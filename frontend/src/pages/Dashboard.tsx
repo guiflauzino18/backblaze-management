@@ -1,25 +1,20 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   HardDrive,
   FolderOpen,
   FileText,
-  LogOut,
-  User,
   Activity,
-  BarChart3,
 } from 'lucide-react'
+import Header from '@/components/Header'
 
 export default function Dashboard() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user } = useAuth()
 
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
+  // const handleLogout = async () => {
+  //   await logout()
+  //   navigate('/login')
+  // }
 
   const stats = [
     {
@@ -64,40 +59,11 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <BarChart3 className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg font-heading font-bold">B2 Management</h1>
-              <p className="text-xs text-muted-foreground">Backblaze B2 Cloud Storage</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <User className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-right">
-                <p className="font-medium text-foreground">{user?.name} {user?.surname}</p>
-                <p className="text-xs capitalize">{user?.role}</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      <Header user={user}/>
+      
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8">
+      <main className=''>
         <div className="mb-8">
           <h2 className="text-2xl font-heading font-bold">Dashboard</h2>
           <p className="text-muted-foreground">
