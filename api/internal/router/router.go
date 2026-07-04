@@ -31,6 +31,7 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 	healthHandler := handlers.NewHealthHandler(db)
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo, cfg.JWTSecret)
 	userHandler := handlers.NewUserHandler(userRepo)
+	bucketHandler := handlers.NewBucketHandler()
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -58,6 +59,28 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 				admin.PUT("/:id", userHandler.Update)
 				admin.DELETE("/:id", userHandler.Delete)
 				admin.PATCH("/:id/toggle-active", userHandler.ToggleActive)
+			}
+
+			// Buckets (read for all authenticated users, write for admin)
+			buckets := protected.Group("/buckets")
+			{
+				buckets.GET("", bucketHandler.ListBuckets)
+				buckets.GET("/:name/objects", bucketHandler.ListObjects)
+				buckets.GET("/:name/objects/:key/versions", bucketHandler.ListObjectVersions)
+				buckets.GET("/:name/objects/:key/download", bucketHandler.DownloadObject)
+				buckets.GET("/:name/lifecycle", bucketHandler.GetLifecycle)
+				buckets.GET("/:name/storage", bucketHandler.GetStorageMetrics)
+			}
+
+			// Bucket management (admin only)
+			bucketAdmin := protected.Group("/buckets")
+			bucketAdmin.Use(middleware.RoleMiddleware("admin"))
+			{
+				bucketAdmin.POST("", bucketHandler.CreateBucket)
+				bucketAdmin.DELETE("/:name", bucketHandler.DeleteBucket)
+				bucketAdmin.POST("/:name/objects/:key/upload", bucketHandler.UploadObject)
+				bucketAdmin.DELETE("/:name/objects/:key", bucketHandler.DeleteObject)
+				bucketAdmin.DELETE("/:name/lifecycle", bucketHandler.DeleteLifecycle)
 			}
 		}
 	}

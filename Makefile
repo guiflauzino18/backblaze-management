@@ -7,7 +7,7 @@ API_DIR = ./api
 
 ## Development
 run:
-	make seed && cd $(API_DIR) && go run ./cmd/api
+	make seed && cd $(API_DIR) && go run ./cmd/api & cd ./frontend && npm run dev
 
 build:
 	cd $(API_DIR) && go build -ldflags="-w -s" -o bin/$(APP_NAME) ./cmd/api

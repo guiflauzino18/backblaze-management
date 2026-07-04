@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"b2-management/internal/aws"
 	"b2-management/internal/config"
 	"b2-management/internal/database"
 	"b2-management/internal/router"
@@ -34,6 +35,11 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
+
+	// Initialize AWS client
+	if err := aws.InitializeAWSClient(cfg); err != nil {
+		log.Fatalf("Failed to initialize AWS client: %v", err)
+	}
 
 	// Setup router
 	r := router.Setup(db, cfg)

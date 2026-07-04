@@ -16,6 +16,11 @@ type Config struct {
 	DBSSLMode  string
 	ServerPort string
 	JWTSecret  string
+	// AWS/Backblaze Configuration
+	AWSAccessKey string
+	AWSSecretKey string
+	AWSEndpoint  string
+	AWSRegion    string
 }
 
 func Load() (*Config, error) {
@@ -32,6 +37,11 @@ func Load() (*Config, error) {
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		JWTSecret:  getEnv("JWT_SECRET", ""),
+		// AWS/Backblaze Configuration
+		AWSAccessKey: getEnv("AWS_ACCESS_KEY_ID", ""),
+		AWSSecretKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+		AWSEndpoint:  getEnv("AWS_ENDPOINT", ""),
+		AWSRegion:    getEnv("AWS_REGION", ""),
 	}
 
 	if cfg.DBPassword == "" {
@@ -40,6 +50,20 @@ func Load() (*Config, error) {
 
 	if cfg.JWTSecret == "" {
 		return nil, fmt.Errorf("JWT_SECRET environment variable is required")
+	}
+
+	// AWS Configuration validation
+	if cfg.AWSAccessKey == "" {
+		return nil, fmt.Errorf("AWS_ACCESS_KEY_ID environment variable is required")
+	}
+	if cfg.AWSSecretKey == "" {
+		return nil, fmt.Errorf("AWS_SECRET_ACCESS_KEY environment variable is required")
+	}
+	if cfg.AWSEndpoint == "" {
+		return nil, fmt.Errorf("AWS_ENDPOINT environment variable is required")
+	}
+	if cfg.AWSRegion == "" {
+		return nil, fmt.Errorf("AWS_REGION environment variable is required")
 	}
 
 	return cfg, nil
