@@ -104,6 +104,7 @@ export const bucketsApi = {
 
   uploadFile: (bucketName: string, key: string, file: File) => {
     const formData = new FormData()
+    formData.append('key', key)
     formData.append('file', file)
 
     const tokens = getStoredTokens()
@@ -112,7 +113,7 @@ export const bucketsApi = {
       headers['Authorization'] = `Bearer ${tokens.accessToken}`
     }
 
-    return fetch(`${API_BASE_URL}/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(key)}/upload`, {
+    return fetch(`${API_BASE_URL}/buckets/${encodeURIComponent(bucketName)}/objects/upload`, {
       method: 'POST',
       headers,
       body: formData,

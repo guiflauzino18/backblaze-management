@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home } from 'lucide-react'
+import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home, Loader2 } from 'lucide-react'
 import type { S3Object } from '@/services/buckets'
 import { bucketsApi, formatBytes, formatDate } from '@/services/buckets'
 
@@ -32,6 +32,8 @@ export default function ObjectExplorer({
   const [error, setError] = useState<string | null>(null)
   const [prefix, setPrefix] = useState('')
   const [breadcrumb, setBreadcrumb] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadObjects = async (currentPrefix: string) => {
     try {
@@ -41,7 +43,6 @@ export default function ObjectExplorer({
 
       if (data.Contents) {
         setObjects(data.Contents)
-        console.log(objects)
       } else {setObjects([])}
       
       if(data.CommonPrefixes && data.CommonPrefixes.length > 0) {
@@ -99,6 +100,30 @@ export default function ObjectExplorer({
     }
   }
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const key = prefix + file.name
+
+    try {
+      setUploading(true)
+      await bucketsApi.uploadFile(bucketName, key, file)
+      alert('Arquivo enviado com sucesso!')
+      await loadObjects(prefix)
+    } catch (err) {
+      alert(`Erro ao enviar arquivo: ${err instanceof Error ? err.message : 'Erro desconhecido'}`)
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true} >
@@ -157,47 +182,7 @@ export default function ObjectExplorer({
             </div>
           ) : (
             <div className="space-y-1">
-              {/* Folders
-              {objects.length <= 0 ? (
-
-                folders.map((folder) => (
-                  
-                  <div
-                    key={folder}
-                    onClick={() => handleFolderClick(folder)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    <FolderOpen className="h-5 w-5 text-blue-500" />
-                  
-                    <span className="flex-1 truncate">{
-                        folder.split("/").reverse()[1]
-                      }
-                    </span>
-                    
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                ))
-
-              ) : (
-
-                objects.map((file) => (
-                  <div
-                    key={file.Key}
-                    onClick={() => onObjectClick(file.Key)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    <File className="h-5 w-5 text-gray-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">{file.Key.split('/').pop()}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatBytes(file.Size)} • {formatDate(file.LastModified)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-                
-              )} */}
-
+              
                 {folders.map((folder) => (
                   
                   <div
@@ -233,24 +218,6 @@ export default function ObjectExplorer({
                 ))
                 
                 }
-
-
-              {/* Files */}
-              {/* {files.map((file) => (
-                <div
-                  key={file.Key}
-                  onClick={() => onObjectClick(file.Key)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
-                >
-                  <File className="h-5 w-5 text-gray-500" />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium">{file.Key.split('/').pop()}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatBytes(file.Size)} • {formatDate(file.LastModified)}
-                    </p>
-                  </div>
-                </div>
-              ))} */}
             </div>
           )}
         </div>
@@ -258,9 +225,28 @@ export default function ObjectExplorer({
         {/* Upload Button (Admin only) */}
         {isAdmin && (
           <div className="border-t pt-4">
-            <Button className="w-full">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload de Arquivo
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              className="w-full"
+              onClick={handleUploadClick}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload de Arquivo
+                </>
+              )}
             </Button>
           </div>
         )}

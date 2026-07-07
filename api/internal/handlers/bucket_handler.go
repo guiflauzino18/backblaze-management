@@ -155,22 +155,27 @@ func (h *BucketHandler) ListObjectVersions(c *gin.Context) {
 // @Accept multipart/form-data
 // @Produce json
 // @Param name path string true "Nome do bucket"
-// @Param key path string true "Chave do objeto"
+// @Param key formData string true "Chave do objeto"
 // @Param file formData file true "Arquivo para upload"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Security BearerAuth
-// @Router /buckets/{name}/objects/{key}/upload [post]
+// @Router /buckets/{name}/objects/upload [post]
 func (h *BucketHandler) UploadObject(c *gin.Context) {
 	bucketName := c.Param("name")
-	key := c.Param("key")
+	key := c.PostForm("key")
 
 	// Apenas admin pode fazer upload
 	role, _ := c.Get("role")
 	if role != "admin" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	if key == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "key is required"})
 		return
 	}
 
