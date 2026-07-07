@@ -79,7 +79,7 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 				bucketAdmin.POST("", bucketHandler.CreateBucket)
 				bucketAdmin.DELETE("/:name", bucketHandler.DeleteBucket)
 				bucketAdmin.POST("/:name/objects/upload", bucketHandler.UploadObject)
-				bucketAdmin.DELETE("/:name/objects/:key", bucketHandler.DeleteObject)
+				bucketAdmin.DELETE("/:name/objects", bucketHandler.DeleteObject)
 				bucketAdmin.DELETE("/:name/lifecycle", bucketHandler.DeleteLifecycle)
 			}
 		}

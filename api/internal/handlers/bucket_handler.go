@@ -238,15 +238,15 @@ func (h *BucketHandler) DownloadObject(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param name path string true "Nome do bucket"
-// @Param key path string true "Chave do objeto"
+// @Param key query string true "Chave do objeto"
 // @Success 200 {object} SuccessResponse
 // @Failure 403 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Security BearerAuth
-// @Router /buckets/{name}/objects/{key} [delete]
+// @Router /buckets/{name}/objects [delete]
 func (h *BucketHandler) DeleteObject(c *gin.Context) {
 	bucketName := c.Param("name")
-	key := c.Param("key")
+	key := c.Query("key")
 
 	// Apenas admin pode deletar objetos
 	role, _ := c.Get("role")
