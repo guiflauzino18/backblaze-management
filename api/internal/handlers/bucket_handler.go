@@ -215,8 +215,9 @@ func (h *BucketHandler) UploadObject(c *gin.Context) {
 func (h *BucketHandler) DownloadObject(c *gin.Context) {
 	bucketName := c.Param("name")
 	key := c.Query("key")
+	versionId := c.Query("version_id")
 
-	data, err := aws.DownloadFile(bucketName, key)
+	data, err := aws.DownloadFile(bucketName, key, versionId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

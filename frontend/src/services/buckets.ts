@@ -126,17 +126,19 @@ export const bucketsApi = {
     })
   },
 
-  downloadFile: async (bucketName: string, key: string) => {
+  downloadFile: async (bucketName: string, key: string, versionId?: string) => {
     const tokens = getStoredTokens()
     const headers: Record<string, string> = {}
     if (tokens?.accessToken) {
       headers['Authorization'] = `Bearer ${tokens.accessToken}`
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/buckets/${encodeURIComponent(bucketName)}/objects/download?key=${encodeURIComponent(key)}`,
-      { headers }
-    )
+    let url = `${API_BASE_URL}/buckets/${encodeURIComponent(bucketName)}/objects/download?key=${encodeURIComponent(key)}`
+    if (versionId) {
+      url += `&version_id=${encodeURIComponent(versionId)}`
+    }
+
+    const response = await fetch(url, { headers })
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Download failed' }))

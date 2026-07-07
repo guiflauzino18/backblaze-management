@@ -70,16 +70,22 @@ func UploadFile(bucketName, key string, body io.Reader, contentType string) erro
 }
 
 // DownloadFile faz download de um arquivo do bucket
-func DownloadFile(bucketName, key string) ([]byte, error) {
+func DownloadFile(bucketName, key, versionId string) ([]byte, error) {
 	client, err := GetS3Client()
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
+	input := &s3.GetObjectInput{
 		Bucket: &bucketName,
 		Key:    &key,
-	})
+	}
+
+	if versionId != "" {
+		input.VersionId = &versionId
+	}
+
+	result, err := client.GetObject(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file %s from bucket %s: %w", key, bucketName, err)
 	}

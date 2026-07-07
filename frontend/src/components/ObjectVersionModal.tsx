@@ -53,7 +53,7 @@ export default function ObjectVersionModal({
 
   const handleDownload = async (versionId?: string) => {
     try {
-      const blob = await bucketsApi.downloadFile(bucketName, objectKey)
+      const blob = await bucketsApi.downloadFile(bucketName, objectKey, versionId)
       const url = window.URL.createObjectURL(blob)
       const link = window.document.createElement('a')
       link.href = url
