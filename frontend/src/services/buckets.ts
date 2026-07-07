@@ -58,8 +58,8 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: { ...headers, ...((options?.headers as Record<string, string>) || {}) },
     ...options,
+    headers: { ...headers, ...((options?.headers as Record<string, string>) || {}) },
   })
 
   if (!response.ok) {
@@ -126,12 +126,25 @@ export const bucketsApi = {
     })
   },
 
-  downloadFile: (bucketName: string, key: string) =>
-    request<Blob>(`/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(key)}/download`, {
-      headers: {
-        Accept: 'application/octet-stream',
-      },
-    }),
+  downloadFile: async (bucketName: string, key: string) => {
+    const tokens = getStoredTokens()
+    const headers: Record<string, string> = {}
+    if (tokens?.accessToken) {
+      headers['Authorization'] = `Bearer ${tokens.accessToken}`
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/buckets/${encodeURIComponent(bucketName)}/objects/download?key=${encodeURIComponent(key)}`,
+      { headers }
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Download failed' }))
+      throw new Error(error.message || `HTTP ${response.status}`)
+    }
+
+    return response.blob()
+  },
 
   deleteObject: (bucketName: string, key: string) =>
     request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(key)}`, {

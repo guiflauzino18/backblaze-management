@@ -207,14 +207,14 @@ func (h *BucketHandler) UploadObject(c *gin.Context) {
 // @Accept json
 // @Produce application/octet-stream
 // @Param name path string true "Nome do bucket"
-// @Param key path string true "Chave do objeto"
+// @Param key query string true "Chave do objeto"
 // @Success 200 {file} binary
 // @Failure 500 {object} ErrorResponse
 // @Security BearerAuth
-// @Router /buckets/{name}/objects/{key}/download [get]
+// @Router /buckets/{name}/objects/download [get]
 func (h *BucketHandler) DownloadObject(c *gin.Context) {
 	bucketName := c.Param("name")
-	key := c.Param("key")
+	key := c.Query("key")
 
 	data, err := aws.DownloadFile(bucketName, key)
 	if err != nil {
