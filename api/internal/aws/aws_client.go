@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"fmt"
 
 	"b2-management/internal/config"
@@ -28,7 +29,7 @@ func InitializeAWSClient(cfg *config.Config) error {
 	)
 
 	// Carregar configuração AWS
-	awsConfig, err := awsconfig.LoadDefaultConfig(nil,
+	awsConfig, err := awsconfig.LoadDefaultConfig(context.TODO(),
 		awsconfig.WithRegion(cfg.AWSRegion),
 	)
 	if err != nil {

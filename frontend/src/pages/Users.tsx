@@ -109,7 +109,7 @@ export default function Users() {
   const totalPages = Math.ceil(total / 10)
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4">
       {/* Header */}
       <div className="mb-8 border-b">
         <h2 className="text-2xl font-heading font-bold">Usuários</h2>
@@ -154,7 +154,7 @@ export default function Users() {
           <p className="text-muted-foreground">Nenhum usuário encontrado</p>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border p-3 rounded-lg bg-card">
           {users.map((user) => (
             <UserCard
               key={user.id}

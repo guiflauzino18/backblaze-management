@@ -11,21 +11,24 @@ import (
 )
 
 // ListObjects lista objetos em um bucket
-func ListObjects(bucketName, prefix string) ([]types.Object, error) {
+func ListObjects(bucketName, prefix string) (*s3.ListObjectsV2Output, error) {
 	client, err := GetS3Client()
 	if err != nil {
 		return nil, err
 	}
 
+	var delimiter string = `/`
+
 	result, err := client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
-		Bucket: &bucketName,
-		Prefix: &prefix,
+		Bucket:    &bucketName,
+		Prefix:    &prefix,
+		Delimiter: &delimiter,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list objects in bucket %s: %w", bucketName, err)
 	}
 
-	return result.Contents, nil
+	return result, nil
 }
 
 // ListObjectVersions lista versões de um objeto

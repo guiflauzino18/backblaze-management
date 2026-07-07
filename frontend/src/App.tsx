@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import Users from '@/pages/Users'
+import Buckets from '@/pages/Buckets'
 import { Loader2 } from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -80,6 +81,16 @@ function App() {
             <ProtectedRoute>
               <Layout>
                 <Users />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buckets"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Buckets />
               </Layout>
             </ProtectedRoute>
           }
