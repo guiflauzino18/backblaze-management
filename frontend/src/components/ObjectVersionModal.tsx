@@ -37,6 +37,7 @@ export default function ObjectVersionModal({
       setError(null)
       const data = await bucketsApi.listObjectVersions(bucketName, objectKey)
       setVersions(data)
+      console.log(data[0])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load versions')
     } finally {
@@ -89,7 +90,7 @@ export default function ObjectVersionModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-5xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <File className="h-5 w-5" />
@@ -127,7 +128,7 @@ export default function ObjectVersionModal({
                     <div>
                       <p className="font-medium">Versão Atual</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatBytes(versions[0]?.size || 0)} • {formatDate(versions[0]?.last_modified || '')}
+                        {formatBytes(versions[0]?.Size || 0)} • {formatDate(versions[0]?.LastModified || '')}
                       </p>
                     </div>
                   </div>
@@ -144,8 +145,8 @@ export default function ObjectVersionModal({
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => handleDelete(versions[0]?.version_id || '')}
-                        disabled={deleting === versions[0]?.version_id}
+                        onClick={() => handleDelete(versions[0]?.VersionId || '')}
+                        disabled={deleting === versions[0]?.VersionId}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Deletar
@@ -163,17 +164,18 @@ export default function ObjectVersionModal({
                   </p>
                   {versions.slice(1).map((version) => (
                     <div
-                      key={version.version_id}
+                      key={version.VersionId}
                       className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50"
                     >
                       <div className="flex items-center gap-3">
                         <File className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm font-medium">
-                            {version.version_id}
+                            {/* {version.VersionId} */}
+                            {version.Key} - {formatDate(version.LastModified)}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatBytes(version.size)} • {formatDate(version.last_modified)}
+                            {formatBytes(version.Size)} • {formatDate(version.LastModified)}
                           </p>
                         </div>
                       </div>
@@ -181,7 +183,7 @@ export default function ObjectVersionModal({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleDownload(version.version_id)}
+                          onClick={() => handleDownload(version.VersionId)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -189,8 +191,8 @@ export default function ObjectVersionModal({
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDelete(version.version_id)}
-                            disabled={deleting === version.version_id}
+                            onClick={() => handleDelete(version.VersionId)}
+                            disabled={deleting === version.VersionId}
                             className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />

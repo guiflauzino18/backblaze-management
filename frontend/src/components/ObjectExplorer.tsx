@@ -41,6 +41,7 @@ export default function ObjectExplorer({
 
       if (data.Contents) {
         setObjects(data.Contents)
+        console.log(objects)
       } else {setObjects([])}
       
       if(data.CommonPrefixes && data.CommonPrefixes.length > 0) {

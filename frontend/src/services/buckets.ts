@@ -27,11 +27,11 @@ export interface S3Result{
 }
 
 export interface ObjectVersion {
-  version_id: string
-  key: string
-  size: number
-  last_modified: string
-  is_latest: boolean
+  VersionId: string
+  Key: string
+  Size: number
+  LastModified: string
+  IsLatest: boolean
 }
 
 export interface StorageMetrics {
@@ -100,7 +100,7 @@ export const bucketsApi = {
   },
 
   listObjectVersions: (bucketName: string, key: string) =>
-    request<ObjectVersion[]>(`/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(key)}/versions`),
+    request<ObjectVersion[]>(`/buckets/${encodeURIComponent(bucketName)}/objects/versions?key=${encodeURIComponent(key)}`),
 
   uploadFile: (bucketName: string, key: string, file: File) => {
     const formData = new FormData()

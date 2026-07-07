@@ -66,7 +66,7 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 			{
 				buckets.GET("", bucketHandler.ListBuckets)
 				buckets.GET("/:name/objects", bucketHandler.ListObjects)
-				buckets.GET("/:name/objects/:key/versions", bucketHandler.ListObjectVersions)
+				buckets.GET("/:name/objects/versions", bucketHandler.ListObjectVersions)
 				buckets.GET("/:name/objects/:key/download", bucketHandler.DownloadObject)
 				buckets.GET("/:name/lifecycle", bucketHandler.GetLifecycle)
 				buckets.GET("/:name/storage", bucketHandler.GetStorageMetrics)

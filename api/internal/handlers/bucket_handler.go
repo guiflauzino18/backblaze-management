@@ -131,14 +131,14 @@ func (h *BucketHandler) ListObjects(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param name path string true "Nome do bucket"
-// @Param key path string true "Chave do objeto"
+// @Param key query string true "Chave do objeto"
 // @Success 200 {array} types.ObjectVersion
 // @Failure 500 {object} ErrorResponse
 // @Security BearerAuth
-// @Router /buckets/{name}/objects/{key}/versions [get]
+// @Router /buckets/{name}/objects/versions [get]
 func (h *BucketHandler) ListObjectVersions(c *gin.Context) {
 	bucketName := c.Param("name")
-	key := c.Param("key")
+	key := c.Query("key")
 
 	versions, err := aws.ListObjectVersions(bucketName, key)
 	if err != nil {
