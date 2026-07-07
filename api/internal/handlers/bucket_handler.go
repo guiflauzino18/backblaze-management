@@ -6,6 +6,7 @@ import (
 
 	"b2-management/internal/aws"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -108,6 +109,7 @@ func (h *BucketHandler) DeleteBucket(c *gin.Context) {
 // @Produce json
 // @Param name path string true "Nome do bucket"
 // @Param prefix query string false "Prefixo de filtro"
+// @Param show_deleted query bool false "Exibir objetos excluídos"
 // @Success 200 {array} types.Object
 // @Failure 500 {object} ErrorResponse
 // @Security BearerAuth
@@ -115,8 +117,17 @@ func (h *BucketHandler) DeleteBucket(c *gin.Context) {
 func (h *BucketHandler) ListObjects(c *gin.Context) {
 	bucketName := c.Param("name")
 	prefix := c.Query("prefix")
+	showDeleted := c.Query("show_deleted") == "true"
 
-	objects, err := aws.ListObjects(bucketName, prefix)
+	var objects *s3.ListObjectsV2Output
+	var err error
+
+	if showDeleted {
+		objects, err = aws.ListObjectsWithDeleted(bucketName, prefix)
+	} else {
+		objects, err = aws.ListObjects(bucketName, prefix)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

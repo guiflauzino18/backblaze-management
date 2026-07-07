@@ -37,7 +37,6 @@ export default function ObjectVersionModal({
       setError(null)
       const data = await bucketsApi.listObjectVersions(bucketName, objectKey)
       setVersions(data)
-      console.log(data[0])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load versions')
     } finally {

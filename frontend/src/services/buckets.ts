@@ -94,8 +94,14 @@ export const bucketsApi = {
     }),
 
   // Objects
-  listObjects: (bucketName: string, prefix?: string) => {
-    const query = prefix ? `?prefix=${encodeURIComponent(prefix)}` : ''
+  listObjects: (bucketName: string, prefix?: string, showDeleted?: boolean) => {
+    let query = prefix ? `?prefix=${encodeURIComponent(prefix)}` : '?'
+    if (showDeleted) {
+      query += `${prefix ? '&' : ''}show_deleted=true`
+    }
+    if (!query || query === '?') {
+      query = ''
+    }
     return request<S3Result>(`/buckets/${encodeURIComponent(bucketName)}/objects${query}`)
   },
 
@@ -150,7 +156,7 @@ export const bucketsApi = {
   },
 
   deleteObject: (bucketName: string, key: string) =>
-    request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/objects/${encodeURIComponent(key)}`, {
+    request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/objects?key=${encodeURIComponent(key)}`, {
       method: 'DELETE',
     }),
 

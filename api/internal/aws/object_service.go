@@ -31,6 +31,72 @@ func ListObjects(bucketName, prefix string) (*s3.ListObjectsV2Output, error) {
 	return result, nil
 }
 
+// ListObjectsWithDeleted lista objetos incluindo os que possuem delete marker
+func ListObjectsWithDeleted(bucketName, prefix string) (*s3.ListObjectsV2Output, error) {
+	client, err := GetS3Client()
+	if err != nil {
+		return nil, err
+	}
+
+	var delimiter string = `/`
+
+	result, err := client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
+		Bucket:    &bucketName,
+		Prefix:    &prefix,
+		Delimiter: &delimiter,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list objects in bucket %s: %w", bucketName, err)
+	}
+
+	// Busca versões para identificar objetos com delete marker
+	versionsResult, err := client.ListObjectVersions(context.TODO(), &s3.ListObjectVersionsInput{
+		Bucket: &bucketName,
+		Prefix: &prefix,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list object versions in bucket %s: %w", bucketName, err)
+	}
+
+	// Mapeia keys que têm delete marker como versão mais recente
+	deletedKeys := make(map[string]bool)
+	for _, v := range versionsResult.DeleteMarkers {
+		if v.IsLatest != nil && *v.IsLatest {
+			deletedKeys[*v.Key] = true
+		}
+	}
+
+	// Adiciona objetos deletados ao resultado
+	for key := range deletedKeys {
+		// Verifica se já não está em Contents
+		found := false
+		for _, obj := range result.Contents {
+			if obj.Key != nil && *obj.Key == key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Busca o LastModified do delete marker
+			var lastModified *time.Time
+			for _, dm := range versionsResult.DeleteMarkers {
+				if dm.Key != nil && *dm.Key == key {
+					lastModified = dm.LastModified
+					break
+				}
+			}
+			size := int64(0)
+			result.Contents = append(result.Contents, types.Object{
+				Key:          &key,
+				Size:         &size,
+				LastModified: lastModified,
+			})
+		}
+	}
+
+	return result, nil
+}
+
 // ListObjectVersions lista versões de um objeto
 func ListObjectVersions(bucketName, key string) ([]types.ObjectVersion, error) {
 	client, err := GetS3Client()

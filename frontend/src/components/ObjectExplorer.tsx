@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home, Loader2 } from 'lucide-react'
+import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home, Loader2, Trash2, RefreshCwIcon } from 'lucide-react'
 import type { S3Object } from '@/services/buckets'
 import { bucketsApi, formatBytes, formatDate } from '@/services/buckets'
 
@@ -33,31 +33,33 @@ export default function ObjectExplorer({
   const [prefix, setPrefix] = useState('')
   const [breadcrumb, setBreadcrumb] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const loadObjects = async (currentPrefix: string) => {
+  const loadObjects = async (currentPrefix: string, showDeletedParam?: boolean) => {
     try {
       setLoading(true)
       setError(null)
-      const data = await bucketsApi.listObjects(bucketName, currentPrefix || undefined)
+      const showDeletedValue = showDeletedParam ?? showDeleted
+      const data = await bucketsApi.listObjects(bucketName, currentPrefix || undefined, showDeletedValue)
 
       if (data.Contents) {
         setObjects(data.Contents)
-      } else {setObjects([])}
-      
-      if(data.CommonPrefixes && data.CommonPrefixes.length > 0) {
+      } else {
+        setObjects([])
+      }
 
-        let f:string[] = []
+      if (data.CommonPrefixes && data.CommonPrefixes.length > 0) {
+        const f: string[] = []
         data.CommonPrefixes.forEach((prefix) => {
           f.push(prefix.Prefix)
         })
-
         setFolders(f)
-      } else { setFolders([])}
-
+      } else {
+        setFolders([])
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load objects')
-
     } finally {
       setLoading(false)
     }
@@ -69,34 +71,28 @@ export default function ObjectExplorer({
       setObjects([])
       setFolders([])
       setBreadcrumb([])
-      loadObjects(prefix)
+      setShowDeleted(false)
+      loadObjects('', false)
     }
-    
   }, [open, bucketName])
 
   const handleFolderClick = (folderPrefix: string) => {
     setPrefix(folderPrefix)
     setBreadcrumb(folderPrefix.split("/"))
-    loadObjects(folderPrefix)
+    loadObjects(folderPrefix, showDeleted)
   }
 
   const handleBreadcrumbClick = async (index: number) => {
     setLoading(true)
     if (index === -1) {
       setPrefix('')
-      setObjects([])
-      setFolders([])
       setBreadcrumb([])
-      loadObjects(prefix).
-        then()
-
+      await loadObjects('', showDeleted)
     } else {
-      const newPrefix = breadcrumb.slice(0, index +1).join().replaceAll(",", "/").concat("/")
+      const newPrefix = breadcrumb.slice(0, index + 1).join('/').concat('/')
       setPrefix(newPrefix)
       setBreadcrumb(breadcrumb.slice(0, index + 1))
-      setObjects([])
-      setFolders([])
-      await loadObjects(prefix)
+      await loadObjects(newPrefix, showDeleted)
     }
   }
 
@@ -114,7 +110,7 @@ export default function ObjectExplorer({
       setUploading(true)
       await bucketsApi.uploadFile(bucketName, key, file)
       alert('Arquivo enviado com sucesso!')
-      await loadObjects(prefix)
+      await loadObjects(prefix, showDeleted)
     } catch (err) {
       alert(`Erro ao enviar arquivo: ${err instanceof Error ? err.message : 'Erro desconhecido'}`)
     } finally {
@@ -125,8 +121,18 @@ export default function ObjectExplorer({
     }
   }
 
+  const handleShowDeletedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = e.target.checked
+    setShowDeleted(checked)
+    loadObjects(prefix, checked)
+  }
+
+  const isDeletedObject = (obj: S3Object): boolean => {
+    return obj.Size === 0
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={true} >
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent className="sm:max-w-7xl max-h-[80vh] h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -172,7 +178,7 @@ export default function ObjectExplorer({
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
               <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={() => loadObjects(prefix)} variant="outline">
+              <Button onClick={() => loadObjects(prefix, showDeleted)} variant="outline">
                 Tentar novamente
               </Button>
             </div>
@@ -182,74 +188,96 @@ export default function ObjectExplorer({
             </div>
           ) : (
             <div className="space-y-1">
-              
-                {folders.map((folder) => (
-                  
-                  <div
-                    key={folder}
-                    onClick={() => handleFolderClick(folder)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
-                  >
-                    <FolderOpen className="h-5 w-5 text-blue-500" />
-                  
-                    <span className="flex-1 truncate">{
-                        folder.split("/").reverse()[1]
-                      }
-                    </span>
-                    
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                ))}
+              {folders.map((folder) => (
+                <div
+                  key={folder}
+                  onClick={() => handleFolderClick(folder)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
+                >
+                  <FolderOpen className="h-5 w-5 text-blue-500" />
+                  <span className="flex-1 truncate">
+                    {folder.split("/").reverse()[1]}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              ))}
 
-                {objects.map((file) => (
+              {objects.map((file) => {
+                const deleted = isDeletedObject(file)
+                return (
                   <div
                     key={file.Key}
                     onClick={() => onObjectClick(file.Key)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer ${deleted ? 'opacity-50' : ''}`}
                   >
-                    <File className="h-5 w-5 text-gray-500" />
+                    {deleted ? (
+                      <Trash2 className="h-5 w-5 text-red-400" />
+                    ) : (
+                      <File className="h-5 w-5 text-gray-500" />
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">{file.Key.split('/').pop()}</p>
+                      <p className="truncate text-sm font-medium">
+                        {deleted && '(Excluído) '}{file.Key.split('/').pop()}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatBytes(file.Size)} • {formatDate(file.LastModified)}
+                        {deleted ? 'Objeto excluído' : `${formatBytes(file.Size)} • ${formatDate(file.LastModified)}`}
                       </p>
                     </div>
                   </div>
-                ))
-                
-                }
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* Upload Button (Admin only) */}
-        {isAdmin && (
-          <div className="border-t pt-4">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <Button
-              className="w-full"
-              onClick={handleUploadClick}
-              disabled={uploading}
+        {/* Footer: Upload + Checkbox */}
+        <div className="border-t pt-4 space-y-3 flex justify-between gap-4">
+
+          <div className='flex gap-4'>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={handleShowDeletedChange}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              Exibir Objetos excluídos
+            </label>
+            <Button 
+              onClick={() => loadObjects(prefix, showDeleted)}
             >
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload de Arquivo
-                </>
-              )}
+              <RefreshCwIcon />
             </Button>
           </div>
-        )}
+
+          {isAdmin && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                className=""
+                onClick={handleUploadClick}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload de Arquivo
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
