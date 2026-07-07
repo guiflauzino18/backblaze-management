@@ -135,7 +135,7 @@ export default function ObjectVersionModal({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDownload()}
+                      onClick={() => handleDownload(versions[0]?.VersionId)}
                     >
                       <Download className="mr-2 h-4 w-4" />
                       Download
