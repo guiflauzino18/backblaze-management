@@ -4,75 +4,146 @@ API para gerenciamento de armazenamento Backblaze B2 usando a API S3.
 
 ## Configuração
 
-1. Copie o arquivo `.env.example` para `.env`:
-   ```bash
-   cp .env.example .env
-   ```
+- criar pasta no servidor:
 
-2. Configure as variáveis de ambiente no arquivo `.env`:
-   - **Database**: Configure as credenciais do PostgreSQL
-   - **JWT**: Defina uma chave secreta para tokens JWT
-   - **AWS/Backblaze**: Configure as credenciais do Backblaze B2
+``` mkdir /b2-management```
 
-### Variáveis de Ambiente AWS/Backblaze
+- Copie o conteúdo do arquivo .env e ajuste o valor das variáveis
+```ini
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=b2management
+DB_PASSWORD=b2management*.
+DB_NAME=b2management
+DB_SSLMODE=disable
 
-- `AWS_ACCESS_KEY_ID`: Application Key ID do Backblaze B2
-- `AWS_SECRET_ACCESS_KEY`: Application Key do Backblaze B2
-- `AWS_ENDPOINT`: Endpoint S3 do Backblaze (ex: `https://s3.us-west-002.backblazeb2.com`)
-- `AWS_REGION`: Região do Backblaze (ex: `us-west-002`)
+# Server
+SERVER_PORT=8080
 
-## Executando a Aplicação
+# JWT
+JWT_SECRET=your_jwt_secret_here_change_in_production
 
-```bash
-# Instalar dependências
-go mod download
-
-# Executar migrations
-make migrate-up
-
-# Iniciar servidor
-make run
+AWS_ACCESS_KEY_ID=005857e047b3072000000001f
+AWS_SECRET_ACCESS_KEY=K005COnvfRE6rf78gNrJILy/wlWkgy8
+AWS_ENDPOINT=https://s3.us-east-005.backblazeb2.com
+AWS_REGION=us-east-5
 ```
+- Crie o arquivo docker-compose.yaml
+```yaml
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: b2management-postgres
+    environment:
+      POSTGRES_USER: b2management
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: b2management
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U b2management"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2management-network
 
-O servidor estará disponível em `http://localhost:8080`
+  migrations:
+    image: migrate/migrate
+    container_name: b2management-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../api/migrations:/migrations
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://b2management:${DB_PASSWORD}@postgres:5432/b2management?sslmode=disable"
+      - "up"
+    networks:
+      - b2management-network
 
-## Autenticação
+  seed:
+    image: guiflauzino18/b2management-api:latest
+    container_name: b2management-seed
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: b2management
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: b2management
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_REGION: ${AWS_REGION}
+    command: ["./seed"]
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - b2management-network
 
-A API utiliza JWT para autenticação. Faça login em `/api/v1/auth/login` para obter o token.
+  api:
+    image: guiflauzino18/b2management-api:latest
+    container_name: b2management-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: b2management
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: b2management
+      DB_SSLMODE: disable
+      SERVER_PORT: "8080"
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_REGION: ${AWS_REGION}
+    ports:
+      - "8080:8080"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    networks:
+      - b2management-network
+
+  frontend:
+    image: guiflauzino18/b2management-frontend:latest
+    container_name: b2management-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - b2management-network
+
+volumes:
+  pgdata:
+
+networks:
+  b2management-network:
+    driver: bridge
+```
+- Execute o comando abaixo:
+```bash
+cd /b2-management
+docker compose pull
+docker compose up -d
+```
 
 ### Roles
 
 - **admin**: Acesso total (pode criar/deletar buckets, fazer upload/download, modificar lifecycle)
 - **user**: Apenas leitura (pode listar buckets, objetos, versões, lifecycle e métricas)
 
-## Endpoints
-
-### Buckets
-
-- `GET /api/v1/buckets` - Listar todos os buckets (admin, user)
-- `POST /api/v1/buckets` - Criar bucket (admin)
-- `DELETE /api/v1/buckets/:name` - Deletar bucket (admin)
-
-### Objetos
-
-- `GET /api/v1/buckets/:name/objects` - Listar objetos em um bucket (admin, user)
-- `GET /api/v1/buckets/:name/objects/:key/versions` - Listar versões de um objeto (admin, user)
-- `POST /api/v1/buckets/:name/objects/:key/upload` - Upload de arquivo (admin)
-- `GET /api/v1/buckets/:name/objects/:key/download` - Download de arquivo (admin, user)
-- `DELETE /api/v1/buckets/:name/objects/:key` - Deletar objeto (admin)
-
-### Lifecycle
-
-- `GET /api/v1/buckets/:name/lifecycle` - Obter regras de lifecycle (admin, user)
-- `DELETE /api/v1/buckets/:name/lifecycle` - Deletar regras de lifecycle (admin)
-
-### Storage Metrics
-
-- `GET /api/v1/buckets/:name/storage` - Obter métricas de armazenamento (admin, user)
-
 ## Documentação Swagger
 
-Acesse `http://localhost:8080/swagger/index.html` para ver a documentação interativa da API.
+Acesse `http://[api_address]:[porta]/swagger/index.html` para ver a documentação interativa da API.
 
 ## Tecnologias
 
@@ -81,3 +152,18 @@ Acesse `http://localhost:8080/swagger/index.html` para ver a documentação inte
 - **AWS SDK for Go v2** para comunicação com Backblaze B2
 - **JWT** para autenticação
 - **Swagger** para documentação
+
+## Deploy
+### push na branch main
+- GitHub Actions builda e publica automaticamente na latest
+```git
+git add .
+git commit -m "feat: nova funcionalidade"
+git push origin main
+```
+
+### Com tag de versão
+```git
+git tag v1.1.0
+git push origin v1.1.0
+```

@@ -34,9 +34,7 @@ services:
       - b2management-network
 
   seed:
-    build:
-      context: ..
-      dockerfile: ./deploy/api.Dockerfile
+    image: guiflauzino18/b2management-api:latest
     container_name: b2management-seed
     environment:
       DB_HOST: postgres
@@ -58,9 +56,7 @@ services:
       - b2management-network
 
   api:
-    build:
-      context: ..
-      dockerfile: ./deploy/api.Dockerfile
+    image: guiflauzino18/b2management-api:latest
     container_name: b2management-api
     environment:
       DB_HOST: postgres
@@ -84,9 +80,7 @@ services:
       - b2management-network
 
   frontend:
-    build:
-      context: ..
-      dockerfile: ./deploy/frontend.Dockerfile
+    image: guiflauzino18/b2management-frontend:latest
     container_name: b2management-frontend
     ports:
       - "80:80"
