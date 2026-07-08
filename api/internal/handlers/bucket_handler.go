@@ -7,6 +7,7 @@ import (
 	"b2-management/internal/aws"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -297,6 +298,74 @@ func (h *BucketHandler) GetLifecycle(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// UpdateLifecycle atualiza as regras de lifecycle de um bucket
+// @Summary Atualizar lifecycle configuration
+// @Tags Lifecycle
+// @Accept json
+// @Produce json
+// @Param name path string true "Nome do bucket"
+// @Param rules body []LifecycleRuleRequest true "Regras de lifecycle"
+// @Success 200 {object} SuccessResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Security BearerAuth
+// @Router /buckets/{name}/lifecycle [put]
+func (h *BucketHandler) UpdateLifecycle(c *gin.Context) {
+	bucketName := c.Param("name")
+
+	// Apenas admin pode modificar lifecycle
+	role, _ := c.Get("role")
+	if role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+		return
+	}
+
+	var req struct {
+		Rules []LifecycleRuleRequest `json:"rules"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var rules []types.LifecycleRule
+	for _, r := range req.Rules {
+		status := types.ExpirationStatusEnabled
+		if r.Status == "Disabled" {
+			status = types.ExpirationStatusDisabled
+		}
+
+		ruleID := r.ID
+		rule := types.LifecycleRule{
+			ID:     &ruleID,
+			Status: status,
+		}
+
+		if r.Prefix != "" {
+			rule.Prefix = &r.Prefix
+		}
+
+		expirationDays := int32(30)
+		if r.ExpirationDays > 0 {
+			expirationDays = r.ExpirationDays
+		}
+		rule.Expiration = &types.LifecycleExpiration{
+			Days: &expirationDays,
+		}
+
+		rules = append(rules, rule)
+	}
+
+	err := aws.PutLifecycleConfiguration(bucketName, rules)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "lifecycle configuration updated successfully"})
+}
+
 // DeleteLifecycle deleta regras de lifecycle de um bucket
 // @Summary Deletar lifecycle configuration
 // @Tags Lifecycle
@@ -354,6 +423,13 @@ func (h *BucketHandler) GetStorageMetrics(c *gin.Context) {
 }
 
 // Request DTOs
+
+type LifecycleRuleRequest struct {
+	ID             string `json:"id"`
+	Status         string `json:"status"`
+	Prefix         string `json:"prefix"`
+	ExpirationDays int32  `json:"expiration_days"`
+}
 
 type CreateBucketRequest struct {
 	Name   string `json:"name" binding:"required,min=3,max=63"`

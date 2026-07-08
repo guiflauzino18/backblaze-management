@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { HardDrive, File, Download, Trash2, CheckCircle2 } from 'lucide-react'
+import { File, Download, Trash2, CheckCircle2 } from 'lucide-react'
 import type { ObjectVersion } from '@/services/buckets'
 import { bucketsApi, formatBytes, formatDate } from '@/services/buckets'
 
@@ -52,6 +52,7 @@ export default function ObjectVersionModal({
 
   const handleDownload = async (versionId?: string) => {
     try {
+      alert("Aguarde... o início do download pode demorar dependendo do tamanho do arquivo. Não feche a página!")
       const blob = await bucketsApi.downloadFile(bucketName, objectKey, versionId)
       const url = window.URL.createObjectURL(blob)
       const link = window.document.createElement('a')

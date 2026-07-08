@@ -4,16 +4,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search, Loader2 } from 'lucide-react'
 import type { Bucket, StorageMetrics } from '@/services/buckets'
-import { bucketsApi, formatBytes } from '@/services/buckets'
+import { bucketsApi } from '@/services/buckets'
 
 interface BucketGridProps {
   isAdmin: boolean
   onCreateBucket: () => void
   onEnterBucket: (bucketName: string) => void
   onDeleteBucket: (bucketName: string) => void
+  onLifecycleBucket: (bucketName: string) => void
 }
 
-export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onDeleteBucket }: BucketGridProps) {
+export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onDeleteBucket, onLifecycleBucket }: BucketGridProps) {
   const [buckets, setBuckets] = useState<Bucket[]>([])
   const [metrics, setMetrics] = useState<Map<string, StorageMetrics>>(new Map())
   const [loading, setLoading] = useState(true)
@@ -130,6 +131,7 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
                 totalSize={bucketMetrics?.total_size || 0}
                 onEnter={() => onEnterBucket(bucket.Name)}
                 onDelete={() => handleDelete(bucket.Name)}
+                onLifecycle={() => onLifecycleBucket(bucket.Name)}
                 isAdmin={isAdmin}
               />
             )

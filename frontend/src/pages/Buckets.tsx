@@ -2,6 +2,7 @@ import { useState } from 'react'
 import BucketGrid from '@/components/BucketGrid'
 import ObjectExplorer from '@/components/ObjectExplorer'
 import ObjectVersionModal from '@/components/ObjectVersionModal'
+import LifecycleModal from '@/components/LifecycleModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,10 +23,11 @@ export default function Buckets() {
 
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [bucketName, setBucketName] = useState('')
-  const [region, setRegion] = useState('us-west-002')
+  const [region, setRegion] = useState('us-east-005')
   const [creating, setCreating] = useState(false)
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null)
   const [selectedObject, setSelectedObject] = useState<string | null>(null)
+  const [lifecycleBucket, setLifecycleBucket] = useState<string | null>(null)
 
   const handleCreateBucket = async () => {
     if (!bucketName.trim()) {
@@ -80,6 +82,7 @@ export default function Buckets() {
         onCreateBucket={() => setShowCreateDialog(true)}
         onEnterBucket={handleEnterBucket}
         onDeleteBucket={handleDeleteBucket}
+        onLifecycleBucket={(name) => setLifecycleBucket(name)}
       />
 
       {/* Object Explorer Modal */}
@@ -101,6 +104,15 @@ export default function Buckets() {
           open={!!selectedObject}
           onOpenChange={(open) => !open && setSelectedObject(null)}
           isAdmin={isAdmin}
+        />
+      )}
+
+      {/* Lifecycle Modal */}
+      {lifecycleBucket && (
+        <LifecycleModal
+          bucketName={lifecycleBucket}
+          open={!!lifecycleBucket}
+          onOpenChange={(open) => !open && setLifecycleBucket(null)}
         />
       )}
 
@@ -135,10 +147,10 @@ export default function Buckets() {
                 disabled={creating}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="us-west-002">US West 002</option>
-                <option value="us-west-001">US West 001</option>
+                {/* <option value="us-west-002">US West 002</option> */}
+                {/* <option value="us-west-001">US West 001</option> */}
                 <option value="us-east-005">US East 005</option>
-                <option value="eu-central-003">EU Central 003</option>
+                {/* <option value="eu-central-003">EU Central 003</option> */}
               </select>
             </div>
           </div>

@@ -1,0 +1,103 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: b2management-postgres
+    environment:
+      POSTGRES_USER: b2management
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: b2management
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U b2management"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - b2management-network
+
+  migrations:
+    image: migrate/migrate
+    container_name: b2management-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../api/migrations:/migrations
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://b2management:${DB_PASSWORD}@postgres:5432/b2management?sslmode=disable"
+      - "up"
+    networks:
+      - b2management-network
+
+  seed:
+    build:
+      context: ..
+      dockerfile: ./deploy/api.Dockerfile
+    container_name: b2management-seed
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: b2management
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: b2management
+      DB_SSLMODE: disable
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_REGION: ${AWS_REGION}
+    command: ["./seed"]
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    networks:
+      - b2management-network
+
+  api:
+    build:
+      context: ..
+      dockerfile: ./deploy/api.Dockerfile
+    container_name: b2management-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: b2management
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: b2management
+      DB_SSLMODE: disable
+      SERVER_PORT: "8080"
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_REGION: ${AWS_REGION}
+    ports:
+      - "8080:8080"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    networks:
+      - b2management-network
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: ./deploy/frontend.Dockerfile
+    container_name: b2management-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - b2management-network
+
+volumes:
+  pgdata:
+
+networks:
+  b2management-network:
+    driver: bridge

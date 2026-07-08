@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,17 +16,14 @@ interface BucketCardProps {
   totalSize: number
   onEnter: () => void
   onDelete: () => void
+  onLifecycle: () => void
   isAdmin: boolean
 }
 
-export default function BucketCard({ bucket, objectCount, totalSize, onEnter, onDelete, isAdmin }: BucketCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-
+export default function BucketCard({ bucket, objectCount, totalSize, onEnter, onDelete, onLifecycle, isAdmin }: BucketCardProps) {
   return (
     <Card
       className="cursor-pointer transition-all hover:shadow-md"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={onEnter}
     >
       <CardHeader className="pb-3">
@@ -56,6 +52,10 @@ export default function BucketCard({ bucket, objectCount, totalSize, onEnter, on
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEnter() }}>
                   <FolderOpen className="mr-2 h-4 w-4" />
                   Entrar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onLifecycle() }}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Lifecycle
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {

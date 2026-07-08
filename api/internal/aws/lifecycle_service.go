@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // GetLifecycleConfiguration obtém as regras de lifecycle de um bucket
@@ -36,6 +37,26 @@ func DeleteLifecycleConfiguration(bucketName string) error {
 	})
 	if err != nil {
 		return fmt.Errorf("failed to delete lifecycle configuration for bucket %s: %w", bucketName, err)
+	}
+
+	return nil
+}
+
+// PutLifecycleConfiguration salva as regras de lifecycle de um bucket
+func PutLifecycleConfiguration(bucketName string, rules []types.LifecycleRule) error {
+	client, err := GetS3Client()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.PutBucketLifecycleConfiguration(context.TODO(), &s3.PutBucketLifecycleConfigurationInput{
+		Bucket: &bucketName,
+		LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+			Rules: rules,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to put lifecycle configuration for bucket %s: %w", bucketName, err)
 	}
 
 	return nil

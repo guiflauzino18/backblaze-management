@@ -164,6 +164,12 @@ export const bucketsApi = {
   getLifecycle: (bucketName: string) =>
     request<any>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`),
 
+  updateLifecycle: (bucketName: string, rules: any[]) =>
+    request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`, {
+      method: 'PUT',
+      body: JSON.stringify({ rules }),
+    }),
+
   deleteLifecycle: (bucketName: string) =>
     request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`, {
       method: 'DELETE',
