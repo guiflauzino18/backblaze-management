@@ -46,13 +46,7 @@ Acesse `http://[api_address]:[porta]/swagger/index.html` para ver a documentaç�
 ```git
 git add .
 git commit -m "feat: nova funcionalidade"
-git tag v1.1.0
-git push origin v1.1.0
+git tag [v1.1.x]
+git push origin [v1.1.x]
 git push origin feat/new_feature
-```
-
-### Com tag de versão
-```git
-git tag v1.1.0
-git push origin v1.1.0
 ```
