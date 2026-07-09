@@ -42,12 +42,13 @@ Acesse `http://[api_address]:[porta]/swagger/index.html` para ver a documentaç�
 - **Swagger** para documentação
 
 ## Deploy
-### push na branch main
-- GitHub Actions builda e publica automaticamente na latest
+- GitHub Actions builda e publica automaticamente na latest e com a tag da versão ao abrir PR na main.
 ```git
 git add .
 git commit -m "feat: nova funcionalidade"
-git push origin main
+git tag v1.1.0
+git push origin v1.1.0
+git push origin feat/new_feature
 ```
 
 ### Com tag de versão
