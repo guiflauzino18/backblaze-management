@@ -1,11 +1,11 @@
 name: Deploy to Docker Hub
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-    tags:
-      - 'v*'
+    # tags:
+    #   - 'v*'
 
 env:
   API_IMAGE: guiflauzino18/b2management-api
