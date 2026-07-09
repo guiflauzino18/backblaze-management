@@ -2,7 +2,11 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"b2-management/internal/analytics"
 	"b2-management/internal/aws"
 	"b2-management/internal/config"
 	"b2-management/internal/database"
@@ -42,7 +46,23 @@ func main() {
 	}
 
 	// Setup router
-	r := router.Setup(db, cfg)
+	r, analyticsRepo := router.Setup(db, cfg)
+
+	// Start analytics worker pool
+	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, analyticsRepo)
+	workerPool.Start()
+
+	// Graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		log.Println("Shutting down server...")
+		workerPool.Stop()
+		db.Close()
+		os.Exit(0)
+	}()
 
 	// Start server
 	addr := ":" + cfg.ServerPort

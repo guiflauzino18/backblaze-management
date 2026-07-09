@@ -40,6 +40,16 @@ export interface StorageMetrics {
   object_count: number
 }
 
+export interface BucketAnalytics {
+  id: string
+  bucket_name: string
+  object_count: number
+  storage_size: number
+  last_updated_at: string
+  created_at: string
+  updated_at: string
+}
+
 export interface CreateBucketRequest {
   name: string
   region: string
@@ -174,6 +184,13 @@ export const bucketsApi = {
     request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`, {
       method: 'DELETE',
     }),
+
+  // Analytics
+  listAnalytics: () =>
+    request<BucketAnalytics[]>('/analytics'),
+
+  getBucketAnalytics: (bucketName: string) =>
+    request<BucketAnalytics>(`/analytics/${encodeURIComponent(bucketName)}`),
 
   // Storage Metrics
   getStorageMetrics: (bucketName: string) =>

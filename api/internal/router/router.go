@@ -12,7 +12,7 @@ import (
 	"b2-management/internal/repository"
 )
 
-func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
+func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnalyticsRepository) {
 	r := gin.Default()
 
 	// CORS
@@ -26,12 +26,14 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
+	bucketAnalyticsRepo := repository.NewBucketAnalyticsRepository(db)
 
 	// Handlers
 	healthHandler := handlers.NewHealthHandler(db)
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo, cfg.JWTSecret)
 	userHandler := handlers.NewUserHandler(userRepo)
 	bucketHandler := handlers.NewBucketHandler()
+	analyticsHandler := handlers.NewAnalyticsHandler(bucketAnalyticsRepo)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -61,6 +63,10 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 				admin.PATCH("/:id/toggle-active", userHandler.ToggleActive)
 			}
 
+			// Analytics (read for all authenticated users)
+			protected.GET("/analytics", analyticsHandler.ListAnalytics)
+			protected.GET("/analytics/:name", analyticsHandler.GetBucketAnalytics)
+
 			// Buckets (read for all authenticated users, write for admin)
 			buckets := protected.Group("/buckets")
 			{
@@ -86,5 +92,5 @@ func Setup(db *sql.DB, cfg *config.Config) *gin.Engine {
 		}
 	}
 
-	return r
+	return r, bucketAnalyticsRepo
 }

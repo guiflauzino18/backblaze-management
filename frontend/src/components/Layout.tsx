@@ -107,7 +107,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background flex-col">
       {/* Mobile sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetTrigger className="fixed left-4 top-4 z-40 lg:hidden">
@@ -142,9 +142,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className={`transition-all duration-200 lg:${collapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`transition-all duration-200 flex-1 lg:${collapsed ? 'ml-16' : 'ml-64'}`}>
         {/* Mobile header */}
-        <header className="flex items-center justify-between border-b px-4 py-3 lg:hidden">
+        {/* <header className="flex items-center justify-between border-b px-4 py-3 lg:hidden">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <BarChart3 className="h-4 w-4 text-primary" />
@@ -159,10 +159,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </AvatarFallback>
             </Avatar>
           </div>
-        </header>
+        </header> */}
 
-        <main>{children}</main>
+        <main className=''>{children}</main>
       </div>
+
+      <footer className='border-t text-center p-3 text-sm mt-30'>
+        <span>
+          v1.1.0 {new Date().getFullYear()}
+        </span>
+      </footer>
     </div>
   )
 }
