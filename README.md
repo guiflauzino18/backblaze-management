@@ -1,6 +1,6 @@
 # B2 Management API
 
-API para gerenciamento de armazenamento Backblaze B2 usando a API S3.
+API para gerenciamento de armazenamento Backblaze B2 usando a API S3. Também funciona em ambientes da Amazon.
 
 ## Configuração
 
@@ -9,15 +9,20 @@ API para gerenciamento de armazenamento Backblaze B2 usando a API S3.
 ``` mkdir /b2-management```
 - Clone o projeto
 ```bash
-git clone [link]
+git clone https://github.com/guiflauzino18/backblaze-management.git .
 ```
-- Ajuste o arquivo .env
+- Ajuste o arquivo .env dentro da pasta deploy
 - Execute o comando abaixo:
 ```bash
-cd /b2-management
+cd /b2-management/deploy/
 docker compose pull
 docker compose up -d
 ```
+
+### Acesso
+- Aplicação possui um usuário padrão que deve ser desativado logo após a criação de um novo usuário adm.
+- usuario: `admin@b2management.com`
+- senha: `sysadmin`
 
 ### Roles
 
@@ -32,7 +37,7 @@ Acesse `http://[api_address]:[porta]/swagger/index.html` para ver a documentaç�
 
 - **Golang** com framework **Gin**
 - **PostgreSQL** para banco de dados
-- **AWS SDK for Go v2** para comunicação com Backblaze B2
+- **AWS SDK for Go v2** para comunicação AWS
 - **JWT** para autenticação
 - **Swagger** para documentação
 
