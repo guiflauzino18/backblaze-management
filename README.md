@@ -2,7 +2,7 @@
 
 API para gerenciamento de armazenamento Backblaze B2 usando a API S3. Também funciona em ambientes da Amazon.
 
-## Configuração
+## Instalação
 
 - criar pasta no servidor:
 
@@ -18,6 +18,22 @@ cd /b2-management/deploy/
 docker compose pull
 docker compose up -d
 ```
+
+## Atualização
+
+Siga os passos abaixos para atualizar a aplicação:
+
+1. Acessar a pasta /b2-management e executar o comando abaixo para baixar arquivos atualizados
+```git
+git pull
+```
+
+2. Acessar a pasta deploy/ e executar os comandos abaixo para baixar novas versões das imagens docker
+```bash
+docker pull
+docker compose up -d
+```
+
 
 ### Acesso
 - Aplicação possui um usuário padrão que deve ser desativado logo após a criação de um novo usuário adm.
