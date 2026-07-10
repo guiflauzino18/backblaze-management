@@ -45,8 +45,9 @@ export default function Dashboard() {
       value: totalBuckets.toString(),
       description: 'Buckets ativos',
       icon: FolderOpen,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100',
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+      border: 'border border-blue-500'
     },
     {
       title: 'Arquivos',
@@ -54,7 +55,8 @@ export default function Dashboard() {
       description: 'Total de objetos',
       icon: FileText,
       color: 'text-emerald-600',
-      bg: 'bg-emerald-100',
+      bg: 'bg-emerald-50',
+      border: 'border border-emerald-600'
     },
     {
       title: 'Espaço Utilizado',
@@ -62,7 +64,8 @@ export default function Dashboard() {
       description: 'Armazenamento total',
       icon: HardDrive,
       color: 'text-amber-600',
-      bg: 'bg-amber-100',
+      bg: 'bg-amber-50',
+      border: 'border border-amber-500'
     },
   ]
 
@@ -90,7 +93,7 @@ export default function Dashboard() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Main Content */}
       <main className=''>
-        <div className="mb-8">
+        <div className="mb-8 border-b py-3">
           <h2 className="text-2xl font-heading font-bold">Dashboard</h2>
           <p className="text-muted-foreground">
             Bem-vindo ao B2 Management, {user?.name}! Aqui está um resumo do seu storage.
@@ -100,7 +103,7 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stats.map((stat) => (
-            <Card key={stat.title}>
+            <Card key={stat.title} className={`${stat.bg} ${stat.border} ${stat.color}`}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                 <div className={`rounded-lg p-2 ${stat.bg}`}>
