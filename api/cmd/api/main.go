@@ -46,10 +46,10 @@ func main() {
 	}
 
 	// Setup router
-	r, analyticsRepo := router.Setup(db, cfg)
+	r, analyticsRepo, objectRepo := router.Setup(db, cfg)
 
-	// Start analytics worker pool
-	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, analyticsRepo)
+	// Start analytics worker pool (analytics + object indexing)
+	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, analyticsRepo, objectRepo)
 	workerPool.Start()
 
 	// Graceful shutdown

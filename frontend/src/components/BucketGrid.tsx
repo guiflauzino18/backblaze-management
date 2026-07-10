@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import BucketCard from '@/components/BucketCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Loader2, RefreshCcwIcon, RefreshCw } from 'lucide-react'
+import { Plus, Search, Loader2, RefreshCw } from 'lucide-react'
 import type { Bucket, BucketAnalytics } from '@/services/buckets'
 import { bucketsApi } from '@/services/buckets'
 

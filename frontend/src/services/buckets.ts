@@ -34,6 +34,18 @@ export interface ObjectVersion {
   IsLatest: boolean
 }
 
+export interface SearchResult {
+  object_key: string
+  size: number
+  last_modified: string
+  is_deleted: boolean
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  total: number
+}
+
 export interface StorageMetrics {
   bucket_name: string
   total_size: number
@@ -191,6 +203,15 @@ export const bucketsApi = {
 
   getBucketAnalytics: (bucketName: string) =>
     request<BucketAnalytics>(`/analytics/${encodeURIComponent(bucketName)}`),
+
+  // Object Search
+  searchObjects: (bucketName: string, query: string, limit?: number, offset?: number, includeDeleted?: boolean) => {
+    let params = `?q=${encodeURIComponent(query)}`
+    if (limit) params += `&limit=${limit}`
+    if (offset) params += `&offset=${offset}`
+    if (includeDeleted) params += `&include_deleted=true`
+    return request<SearchResponse>(`/buckets/${encodeURIComponent(bucketName)}/objects/search${params}`)
+  },
 
   // Storage Metrics
   getStorageMetrics: (bucketName: string) =>

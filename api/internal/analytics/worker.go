@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"b2-management/internal/aws"
+	"b2-management/internal/models"
 	"b2-management/internal/repository"
 )
 
@@ -14,23 +15,25 @@ type bucketJob struct {
 	name string
 }
 
-// WorkerPool gerencia o pool de workers para coleta de dados analíticos
+// WorkerPool gerencia o pool de workers para coleta de dados analíticos e indexação de objetos
 type WorkerPool struct {
 	workers       int
 	interval      time.Duration
 	analyticsRepo *repository.BucketAnalyticsRepository
+	objectRepo    *repository.ObjectIndexRepository
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
 }
 
 // NewWorkerPool cria um novo pool de workers
-func NewWorkerPool(workers int, interval time.Duration, analyticsRepo *repository.BucketAnalyticsRepository) *WorkerPool {
+func NewWorkerPool(workers int, interval time.Duration, analyticsRepo *repository.BucketAnalyticsRepository, objectRepo *repository.ObjectIndexRepository) *WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &WorkerPool{
 		workers:       workers,
 		interval:      interval,
 		analyticsRepo: analyticsRepo,
+		objectRepo:    objectRepo,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
@@ -142,21 +145,125 @@ func (wp *WorkerPool) worker(jobs chan bucketJob, results chan struct{}) {
 
 		log.Printf("[Analytics] Processing bucket: %s", job.name)
 
+		// 1. Coleta métricas de armazenamento
 		totalSize, objectCount, err := aws.GetBucketStorageMetrics(job.name)
 		if err != nil {
 			log.Printf("[Analytics] Failed to get metrics for bucket %s: %v", job.name, err)
-			// Mesmo com erro, garante que o bucket existe no banco
 			if err := wp.analyticsRepo.EnsureExists(job.name); err != nil {
 				log.Printf("[Analytics] Failed to ensure bucket %s exists: %v", job.name, err)
 			}
-			continue
+		} else {
+			if err := wp.analyticsRepo.Upsert(job.name, objectCount, totalSize); err != nil {
+				log.Printf("[Analytics] Failed to save analytics for bucket %s: %v", job.name, err)
+			}
+			log.Printf("[Analytics] Bucket %s: %d objects, %d bytes", job.name, objectCount, totalSize)
 		}
 
-		if err := wp.analyticsRepo.Upsert(job.name, objectCount, totalSize); err != nil {
-			log.Printf("[Analytics] Failed to save analytics for bucket %s: %v", job.name, err)
-			continue
+		// 2. Indexa objetos do bucket
+		if err := wp.indexBucketObjects(job.name); err != nil {
+			log.Printf("[Analytics] Failed to index objects for bucket %s: %v", job.name, err)
 		}
-
-		log.Printf("[Analytics] Bucket %s: %d objects, %d bytes", job.name, objectCount, totalSize)
 	}
+}
+
+// indexBucketObjects percorre todos os objetos de um bucket e os indexa no banco
+func (wp *WorkerPool) indexBucketObjects(bucketName string) error {
+	log.Printf("[Analytics] Indexing objects for bucket: %s", bucketName)
+
+	// Mapa para armazenar keys com delete marker como versão mais recente
+	deletedKeys := make(map[string]bool)
+
+	// Primeiro, faz paginação dos delete markers
+	var keyMarker *string
+	for {
+		versionsResult, err := aws.ListObjectsV2VersionsPaginated(bucketName, keyMarker, nil)
+		if err != nil {
+			return err
+		}
+
+		for _, dm := range versionsResult.DeleteMarkers {
+			if dm.IsLatest != nil && *dm.IsLatest && dm.Key != nil {
+				deletedKeys[*dm.Key] = true
+			}
+		}
+
+		if versionsResult.IsTruncated != nil && *versionsResult.IsTruncated {
+			keyMarker = versionsResult.NextKeyMarker
+		} else {
+			break
+		}
+	}
+
+	// Agora percorre todos os objetos atuais com paginação
+	var continuationToken *string
+	objectCount := 0
+
+	for {
+		result, err := aws.ListObjectsV2Paginated(bucketName, continuationToken)
+		if err != nil {
+			return err
+		}
+
+		// Prepara batch para upsert
+		var batch []models.BucketObject
+		for _, obj := range result.Contents {
+			if obj.Key == nil {
+				continue
+			}
+
+			key := *obj.Key
+			isDeleted := deletedKeys[key]
+			var lastModified time.Time
+			if obj.LastModified != nil {
+				lastModified = *obj.LastModified
+			}
+
+			var size int64
+			if obj.Size != nil {
+				size = *obj.Size
+			}
+			batch = append(batch, models.BucketObject{
+				ObjectKey:    key,
+				Size:         size,
+				LastModified: lastModified,
+				IsDeleted:    isDeleted,
+			})
+			objectCount++
+		}
+
+		// Adiciona objetos que têm delete marker mas não estão em Contents
+		for key := range deletedKeys {
+			found := false
+			for _, obj := range result.Contents {
+				if obj.Key != nil && *obj.Key == key {
+					found = true
+					break
+				}
+			}
+			if !found {
+				batch = append(batch, models.BucketObject{
+					ObjectKey: key,
+					Size:      0,
+					IsDeleted: true,
+				})
+				objectCount++
+			}
+		}
+
+		// Bulk upsert no banco
+		if len(batch) > 0 {
+			if err := wp.objectRepo.BulkUpsert(bucketName, batch); err != nil {
+				return err
+			}
+		}
+
+		if result.IsTruncated != nil && *result.IsTruncated {
+			continuationToken = result.NextContinuationToken
+		} else {
+			break
+		}
+	}
+
+	log.Printf("[Analytics] Indexed %d objects for bucket %s", objectCount, bucketName)
+	return nil
 }

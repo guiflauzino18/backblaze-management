@@ -12,7 +12,7 @@ import (
 	"b2-management/internal/repository"
 )
 
-func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnalyticsRepository) {
+func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnalyticsRepository, *repository.ObjectIndexRepository) {
 	r := gin.Default()
 
 	// CORS
@@ -27,6 +27,7 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 	userRepo := repository.NewUserRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
 	bucketAnalyticsRepo := repository.NewBucketAnalyticsRepository(db)
+	objectIndexRepo := repository.NewObjectIndexRepository(db)
 
 	// Handlers
 	healthHandler := handlers.NewHealthHandler(db)
@@ -34,6 +35,7 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 	userHandler := handlers.NewUserHandler(userRepo)
 	bucketHandler := handlers.NewBucketHandler()
 	analyticsHandler := handlers.NewAnalyticsHandler(bucketAnalyticsRepo)
+	objectSearchHandler := handlers.NewObjectSearchHandler(objectIndexRepo)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -72,6 +74,7 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 			{
 				buckets.GET("", bucketHandler.ListBuckets)
 				buckets.GET("/:name/objects", bucketHandler.ListObjects)
+				buckets.GET("/:name/objects/search", objectSearchHandler.SearchObjects)
 				buckets.GET("/:name/objects/versions", bucketHandler.ListObjectVersions)
 				buckets.GET("/:name/objects/download", bucketHandler.DownloadObject)
 				buckets.GET("/:name/lifecycle", bucketHandler.GetLifecycle)
@@ -92,5 +95,5 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 		}
 	}
 
-	return r, bucketAnalyticsRepo
+	return r, bucketAnalyticsRepo, objectIndexRepo
 }
