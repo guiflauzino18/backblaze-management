@@ -67,7 +67,7 @@ export default function Buckets() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4">
       {/* Header */}
       <div className="mb-8">
         <h2 className="text-2xl font-heading font-bold">Buckets</h2>

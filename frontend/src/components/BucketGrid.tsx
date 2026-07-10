@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import BucketCard from '@/components/BucketCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Loader2 } from 'lucide-react'
+import { Plus, Search, Loader2, RefreshCcwIcon, RefreshCw } from 'lucide-react'
 import type { Bucket, BucketAnalytics } from '@/services/buckets'
 import { bucketsApi } from '@/services/buckets'
 
@@ -60,10 +60,9 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
     }
   }
 
-  // const filteredBuckets = buckets.filter((bucket) =>
-  //   // bucket.Name.includes(searchTerm.toLowerCase())
-  // )
-  const filteredBuckets = buckets
+  const filteredBuckets = buckets.filter((bucket) =>
+    bucket.Name.includes(searchTerm.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -91,16 +90,23 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
           <Input
             placeholder="Buscar buckets..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
             className="pl-9"
           />
         </div>
-        {isAdmin && (
-          <Button onClick={onCreateBucket}>
-            <Plus className="mr-2 h-4 w-4" />
-            Criar Bucket
+        <div className='flex gap-3 items-center'>
+
+          <Button onClick={loadBuckets}>
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        )}
+
+          {isAdmin && (
+            <Button onClick={onCreateBucket}>
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Bucket
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Buckets Grid */}
