@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import BucketCard from '@/components/BucketCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Search, Loader2 } from 'lucide-react'
-import type { Bucket, StorageMetrics } from '@/services/buckets'
+import { Plus, Search, Loader2, RefreshCw } from 'lucide-react'
+import type { Bucket, BucketAnalytics } from '@/services/buckets'
 import { bucketsApi } from '@/services/buckets'
 
 interface BucketGridProps {
@@ -16,7 +16,7 @@ interface BucketGridProps {
 
 export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onDeleteBucket, onLifecycleBucket }: BucketGridProps) {
   const [buckets, setBuckets] = useState<Bucket[]>([])
-  const [metrics, setMetrics] = useState<Map<string, StorageMetrics>>(new Map())
+  const [analytics, setAnalytics] = useState<Map<string, BucketAnalytics>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -28,20 +28,17 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
       const data = await bucketsApi.listBuckets()
       setBuckets(data)
 
-      // Load metrics for each bucket
-      const metricsMap = new Map<string, StorageMetrics>()
-      // Promise.all(
-      //   data.map(async (bucket) => {
-      //     try {
-      //       console.log(bucket)
-      //       const metric = await bucketsApi.getStorageMetrics(bucket.Name.toLowerCase())
-      //       metricsMap.set(bucket.Name, metric)
-      //     } catch (err) {
-      //       console.error(`Failed to load metrics for bucket ${bucket.Name}:`, err)
-      //     }
-      //   })
-      // )
-      setMetrics(metricsMap)
+      // Load analytics for all buckets
+      try {
+        const analyticsData = await bucketsApi.listAnalytics()
+        const analyticsMap = new Map<string, BucketAnalytics>()
+        analyticsData.forEach((a) => {
+          analyticsMap.set(a.bucket_name, a)
+        })
+        setAnalytics(analyticsMap)
+      } catch (err) {
+        console.error('Failed to load analytics:', err)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load buckets')
     } finally {
@@ -63,10 +60,9 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
     }
   }
 
-  // const filteredBuckets = buckets.filter((bucket) =>
-  //   // bucket.Name.includes(searchTerm.toLowerCase())
-  // )
-  const filteredBuckets = buckets
+  const filteredBuckets = buckets.filter((bucket) =>
+    bucket.Name.includes(searchTerm.toLowerCase())
+  )
 
   if (loading) {
     return (
@@ -94,16 +90,23 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
           <Input
             placeholder="Buscar buckets..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value.toLowerCase())}
             className="pl-9"
           />
         </div>
-        {isAdmin && (
-          <Button onClick={onCreateBucket}>
-            <Plus className="mr-2 h-4 w-4" />
-            Criar Bucket
+        <div className='flex gap-3 items-center'>
+
+          <Button onClick={loadBuckets}>
+            <RefreshCw className="h-4 w-4" />
           </Button>
-        )}
+
+          {isAdmin && (
+            <Button onClick={onCreateBucket}>
+              <Plus className="mr-2 h-4 w-4" />
+              Criar Bucket
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Buckets Grid */}
@@ -122,13 +125,13 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredBuckets.map((bucket) => {
-            const bucketMetrics = metrics.get(bucket.Name)
+            const bucketAnalytics = analytics.get(bucket.Name)
             return (
               <BucketCard
                 key={bucket.Name}
                 bucket={bucket}
-                objectCount={bucketMetrics?.object_count || 0}
-                totalSize={bucketMetrics?.total_size || 0}
+                objectCount={bucketAnalytics?.object_count || 0}
+                totalSize={bucketAnalytics?.storage_size || 0}
                 onEnter={() => onEnterBucket(bucket.Name)}
                 onDelete={() => handleDelete(bucket.Name)}
                 onLifecycle={() => onLifecycleBucket(bucket.Name)}

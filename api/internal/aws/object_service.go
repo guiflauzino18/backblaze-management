@@ -10,6 +10,53 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// ListObjectsV2Paginated lista objetos em um bucket com paginação
+func ListObjectsV2Paginated(bucketName string, continuationToken *string) (*s3.ListObjectsV2Output, error) {
+	client, err := GetS3Client()
+	if err != nil {
+		return nil, err
+	}
+
+	input := &s3.ListObjectsV2Input{
+		Bucket: &bucketName,
+	}
+	if continuationToken != nil {
+		input.ContinuationToken = continuationToken
+	}
+
+	result, err := client.ListObjectsV2(context.TODO(), input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list objects in bucket %s: %w", bucketName, err)
+	}
+
+	return result, nil
+}
+
+// ListObjectsV2VersionsPaginated lista versões de objetos em um bucket com paginação
+func ListObjectsV2VersionsPaginated(bucketName string, keyMarker, versionIdMarker *string) (*s3.ListObjectVersionsOutput, error) {
+	client, err := GetS3Client()
+	if err != nil {
+		return nil, err
+	}
+
+	input := &s3.ListObjectVersionsInput{
+		Bucket: &bucketName,
+	}
+	if keyMarker != nil {
+		input.KeyMarker = keyMarker
+	}
+	if versionIdMarker != nil {
+		input.VersionIdMarker = versionIdMarker
+	}
+
+	result, err := client.ListObjectVersions(context.TODO(), input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list object versions in bucket %s: %w", bucketName, err)
+	}
+
+	return result, nil
+}
+
 // ListObjects lista objetos em um bucket
 func ListObjects(bucketName, prefix string) (*s3.ListObjectsV2Output, error) {
 	client, err := GetS3Client()

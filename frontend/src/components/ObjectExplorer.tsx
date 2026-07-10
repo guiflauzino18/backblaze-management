@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home, Loader2, Trash2, RefreshCwIcon } from 'lucide-react'
-import type { S3Object } from '@/services/buckets'
+import { Input } from '@/components/ui/input'
+import { HardDrive, FolderOpen, File, Upload, ChevronRight, Home, Loader2, Trash2, RefreshCwIcon, Search, X } from 'lucide-react'
+import type { S3Object, SearchResult } from '@/services/buckets'
 import { bucketsApi, formatBytes, formatDate } from '@/services/buckets'
 
 interface ObjectExplorerProps {
@@ -34,6 +35,12 @@ export default function ObjectExplorer({
   const [breadcrumb, setBreadcrumb] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [searchTotal, setSearchTotal] = useState(0)
+  const [searching, setSearching] = useState(false)
+  const [searchMode, setSearchMode] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadObjects = async (currentPrefix: string, showDeletedParam?: boolean) => {
@@ -72,6 +79,9 @@ export default function ObjectExplorer({
       setFolders([])
       setBreadcrumb([])
       setShowDeleted(false)
+      setSearchQuery('')
+      setSearchMode(false)
+      setSearchResults([])
       loadObjects('', false)
     }
   }, [open, bucketName])
@@ -121,10 +131,60 @@ export default function ObjectExplorer({
     }
   }
 
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchMode(false)
+      setSearchResults([])
+      setSearchTotal(0)
+      return
+    }
+
+    try {
+      setSearching(true)
+      setSearchMode(true)
+      const result = await bucketsApi.searchObjects(bucketName, query, 50, 0, showDeleted)
+      setSearchResults(result.results)
+      setSearchTotal(result.total)
+    } catch (err) {
+      console.error('Search failed:', err)
+      setSearchResults([])
+      setSearchTotal(0)
+    } finally {
+      setSearching(false)
+    }
+  }, [bucketName, showDeleted])
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    debounceRef.current = setTimeout(() => {
+      handleSearch(value)
+    }, 300)
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchMode(false)
+    setSearchResults([])
+    setSearchTotal(0)
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+  }
+
   const handleShowDeletedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked
     setShowDeleted(checked)
-    loadObjects(prefix, checked)
+    if (searchMode) {
+      handleSearch(searchQuery)
+    } else {
+      loadObjects(prefix, checked)
+    }
   }
 
   const isDeletedObject = (obj: S3Object): boolean => {
@@ -144,95 +204,161 @@ export default function ObjectExplorer({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleBreadcrumbClick(-1)}
-            className="h-8 px-2"
-          >
-            <Home className="h-4 w-4" />
-          </Button>
-          {breadcrumb.map((item, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleBreadcrumbClick(index)}
-                className="h-8 px-2"
-              >
-                {item}
-              </Button>
-            </div>
-          ))}
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar objetos..."
+            value={searchQuery}
+            onChange={handleSearchInputChange}
+            className="pl-9 pr-8"
+          />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearSearch}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
+
+        {/* Breadcrumb (only in navigation mode) */}
+        {!searchMode && (
+          <div className="flex items-center gap-2 text-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleBreadcrumbClick(-1)}
+              className="h-8 px-2"
+            >
+              <Home className="h-4 w-4" />
+            </Button>
+            {breadcrumb.map((item, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleBreadcrumbClick(index)}
+                  className="h-8 px-2"
+                >
+                  {item}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={() => loadObjects(prefix, showDeleted)} variant="outline">
-                Tentar novamente
-              </Button>
-            </div>
-          ) : objects.length === 0 && folders.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">Não há nada aqui!</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {folders.map((folder) => (
-                <div
-                  key={folder}
-                  onClick={() => handleFolderClick(folder)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
-                >
-                  <FolderOpen className="h-5 w-5 text-blue-500" />
-                  <span className="flex-1 truncate">
-                    {folder.split("/").reverse()[1]}
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              ))}
-
-              {objects.map((file) => {
-                const deleted = isDeletedObject(file)
-                return (
+          {searchMode ? (
+            /* Search Results */
+            searching ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-muted-foreground">Nenhum resultado encontrado</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground px-3 py-2">
+                  {searchTotal} resultado(s) para "{searchQuery}"
+                </p>
+                {searchResults.map((result) => (
                   <div
-                    key={file.Key}
-                    onClick={() => onObjectClick(file.Key)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer ${deleted ? 'opacity-50' : ''}`}
+                    key={result.object_key}
+                    onClick={() => onObjectClick(result.object_key)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer ${result.is_deleted ? 'opacity-50' : ''}`}
                   >
-                    {deleted ? (
+                    {result.is_deleted ? (
                       <Trash2 className="h-5 w-5 text-red-400" />
                     ) : (
                       <File className="h-5 w-5 text-gray-500" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-sm font-medium">
-                        {deleted && '(Excluído) '}{file.Key.split('/').pop()}
+                        {result.is_deleted && '(Excluído) '}{result.object_key.split('/').pop()}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {result.object_key}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {deleted ? 'Objeto excluído' : `${formatBytes(file.Size)} • ${formatDate(file.LastModified)}`}
+                        {result.is_deleted ? 'Objeto excluído' : `${formatBytes(result.size)} • ${formatDate(result.last_modified)}`}
                       </p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )
+          ) : (
+            /* Navigation Mode */
+            loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-destructive mb-4">{error}</p>
+                <Button onClick={() => loadObjects(prefix, showDeleted)} variant="outline">
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : objects.length === 0 && folders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-muted-foreground">Não há nada aqui!</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {folders.map((folder) => (
+                  <div
+                    key={folder}
+                    onClick={() => handleFolderClick(folder)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer"
+                  >
+                    <FolderOpen className="h-5 w-5 text-blue-500" />
+                    <span className="flex-1 truncate">
+                      {folder.split("/").reverse()[1]}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                ))}
+
+                {objects.map((file) => {
+                  const deleted = isDeletedObject(file)
+                  return (
+                    <div
+                      key={file.Key}
+                      onClick={() => onObjectClick(file.Key)}
+                      className={`flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-muted cursor-pointer ${deleted ? 'opacity-50' : ''}`}
+                    >
+                      {deleted ? (
+                        <Trash2 className="h-5 w-5 text-red-400" />
+                      ) : (
+                        <File className="h-5 w-5 text-gray-500" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {deleted && '(Excluído) '}{file.Key.split('/').pop()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {deleted ? 'Objeto excluído' : `${formatBytes(file.Size)} • ${formatDate(file.LastModified)}`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
           )}
         </div>
 
         {/* Footer: Upload + Checkbox */}
         <div className="border-t pt-4 space-y-3 flex justify-between gap-4">
-
           <div className='flex gap-4'>
             <label className="flex items-center gap-2 cursor-pointer text-sm">
               <input

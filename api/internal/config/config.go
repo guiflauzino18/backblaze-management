@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -19,14 +20,24 @@ type Config struct {
 	// AWS/Backblaze Configuration
 	AWSAccessKey string
 	AWSSecretKey string
-	AWSEndpoint  string
 	AWSRegion    string
+	AWSEndpoint  string
+	// Analytics Configuration
+	AnalyticsInterval time.Duration
+	AnalyticsWorkers  int
 }
 
 func Load() (*Config, error) {
 	// Load .env file from current directory or parent directory
 	_ = godotenv.Load()
 	_ = godotenv.Load("../.env")
+
+	analyticsInterval, err := time.ParseDuration(getEnv("ANALYTICS_INTERVAL", "4h"))
+	if err != nil {
+		analyticsInterval = 4 * time.Hour
+	}
+
+	analyticsWorkers := getEnvAsInt("ANALYTICS_WORKERS", 4)
 
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -42,6 +53,9 @@ func Load() (*Config, error) {
 		AWSSecretKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
 		AWSEndpoint:  getEnv("AWS_ENDPOINT", ""),
 		AWSRegion:    getEnv("AWS_REGION", ""),
+		// Analytics Configuration
+		AnalyticsInterval: analyticsInterval,
+		AnalyticsWorkers:  analyticsWorkers,
 	}
 
 	if cfg.DBPassword == "" {
@@ -81,4 +95,17 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return defaultValue
+	}
+	var value int
+	_, err := fmt.Sscanf(valueStr, "%d", &value)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }

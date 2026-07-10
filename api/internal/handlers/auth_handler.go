@@ -51,6 +51,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	if !user.IsActive {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user deactivated"})
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return

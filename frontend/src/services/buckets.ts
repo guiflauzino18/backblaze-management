@@ -34,10 +34,32 @@ export interface ObjectVersion {
   IsLatest: boolean
 }
 
+export interface SearchResult {
+  object_key: string
+  size: number
+  last_modified: string
+  is_deleted: boolean
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  total: number
+}
+
 export interface StorageMetrics {
   bucket_name: string
   total_size: number
   object_count: number
+}
+
+export interface BucketAnalytics {
+  id: string
+  bucket_name: string
+  object_count: number
+  storage_size: number
+  last_updated_at: string
+  created_at: string
+  updated_at: string
 }
 
 export interface CreateBucketRequest {
@@ -164,16 +186,32 @@ export const bucketsApi = {
   getLifecycle: (bucketName: string) =>
     request<any>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`),
 
-  updateLifecycle: (bucketName: string, rules: any[]) =>
+  updateLifecycle: (bucketName: string, Rules: any[]) =>
     request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`, {
       method: 'PUT',
-      body: JSON.stringify({ rules }),
+      body: JSON.stringify({ Rules }),
     }),
 
   deleteLifecycle: (bucketName: string) =>
     request<{ message: string }>(`/buckets/${encodeURIComponent(bucketName)}/lifecycle`, {
       method: 'DELETE',
     }),
+
+  // Analytics
+  listAnalytics: () =>
+    request<BucketAnalytics[]>('/analytics'),
+
+  getBucketAnalytics: (bucketName: string) =>
+    request<BucketAnalytics>(`/analytics/${encodeURIComponent(bucketName)}`),
+
+  // Object Search
+  searchObjects: (bucketName: string, query: string, limit?: number, offset?: number, includeDeleted?: boolean) => {
+    let params = `?q=${encodeURIComponent(query)}`
+    if (limit) params += `&limit=${limit}`
+    if (offset) params += `&offset=${offset}`
+    if (includeDeleted) params += `&include_deleted=true`
+    return request<SearchResponse>(`/buckets/${encodeURIComponent(bucketName)}/objects/search${params}`)
+  },
 
   // Storage Metrics
   getStorageMetrics: (bucketName: string) =>

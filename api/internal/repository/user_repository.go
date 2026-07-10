@@ -123,6 +123,10 @@ func (r *UserRepository) List(search string, page, limit int) ([]*models.User, i
 	}
 	defer rows.Close()
 
+	if rows.Err() != nil {
+		return nil, 0, fmt.Errorf("failed list users: %w", rows.Err())
+	}
+
 	var users []*models.User
 	for rows.Next() {
 		user := &models.User{}
