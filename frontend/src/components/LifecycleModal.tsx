@@ -17,7 +17,7 @@ interface LifecycleRule {
   status: string
   prefix: string | null
   expiration_days: number | null
-  noncurrent_version_expiration_days: number
+  noncurrent_days: number
 }
 
 interface LifecycleModalProps {
@@ -47,8 +47,8 @@ export default function LifecycleModal({
           id: rule.ID || `rule-${index}`,
           status: rule.Status || 'Enabled',
           prefix: rule.Prefix || '',
-          expiration_days: rule.Expiration?.Days || 30,
-          noncurrent_version_expiration_days: rule.NoncurrentVersionExpiration.NoncurrentDays
+          expiration_days: rule.Expiration?.Days || 0,
+          noncurrent_days: rule.NoncurrentVersionExpiration.NoncurrentDays
 
         }))
         setRules(mappedRules)
@@ -77,7 +77,7 @@ export default function LifecycleModal({
       status: 'Enabled',
       prefix: '',
       expiration_days: null,
-      noncurrent_version_expiration_days: 7,
+      noncurrent_days: 7,
     }
     setRules([...rules, newRule])
     setEnabled(true)
@@ -178,7 +178,6 @@ export default function LifecycleModal({
                           <div className="space-y-1">
                             <Label>Prefixo</Label>
                             <Input
-                              placeholder="Ex: logs/"
                               value={rule.prefix ?? ""}
                               onChange={(e) => updateRule(index, 'prefix', e.target.value)}
                             />
@@ -189,8 +188,17 @@ export default function LifecycleModal({
                             <Input
                               type="number"
                               min={1}
-                              placeholder="7"
-                              value={rule.noncurrent_version_expiration_days}
+                              value={rule.noncurrent_days || 0}
+                              onChange={(e) => updateRule(index, 'noncurrent_days', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label>Dias a Expirar versões atuais</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={rule.expiration_days || 0}
                               onChange={(e) => updateRule(index, 'expiration_days', parseInt(e.target.value) || 0)}
                             />
                           </div>

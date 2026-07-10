@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -340,22 +343,28 @@ func (h *BucketHandler) UpdateLifecycle(c *gin.Context) {
 		rule := types.LifecycleRule{
 			ID:     &ruleID,
 			Status: status,
+			Filter: &types.LifecycleRuleFilter{
+				Prefix: &r.Prefix,
+			},
 		}
 
-		if r.Prefix != "" {
-			rule.Prefix = &r.Prefix
-		}
-
-		expirationDays := int32(30)
 		if r.ExpirationDays > 0 {
-			expirationDays = r.ExpirationDays
+			rule.Expiration = &types.LifecycleExpiration{
+				Days: &r.ExpirationDays,
+			}
 		}
-		rule.Expiration = &types.LifecycleExpiration{
-			Days: &expirationDays,
+
+		if r.NoncurrentDays > 0 {
+			rule.NoncurrentVersionExpiration = &types.NoncurrentVersionExpiration{
+				NoncurrentDays: &r.NoncurrentDays,
+			}
 		}
 
 		rules = append(rules, rule)
 	}
+
+	dados, _ := json.MarshalIndent(rules, "", " ")
+	fmt.Println(bytes.NewBuffer(dados))
 
 	err := aws.PutLifecycleConfiguration(bucketName, rules)
 	if err != nil {
@@ -429,6 +438,7 @@ type LifecycleRuleRequest struct {
 	Status         string `json:"status"`
 	Prefix         string `json:"prefix"`
 	ExpirationDays int32  `json:"expiration_days"`
+	NoncurrentDays int32  `json:"noncurrent_days"`
 }
 
 type CreateBucketRequest struct {

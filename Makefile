@@ -79,3 +79,6 @@ dev: docker-up migrate-up seed
 
 dev-frontend:
 	cd frontend && npm run dev
+
+kill:
+	kill -9 $(lsof -t -i:8080)
