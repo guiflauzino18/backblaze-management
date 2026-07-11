@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Plus, Loader2 } from 'lucide-react'
+import { Search, Plus, Loader2, Copy, Check } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -32,6 +32,9 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<UserInfo | null>(null)
   const [deleteUser, setDeleteUser] = useState<UserInfo | null>(null)
   const [toggleUser, setToggleUser] = useState<UserInfo | null>(null)
+  const [tokenUser, setTokenUser] = useState<UserInfo | null>(null)
+  const [generatedToken, setGeneratedToken] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadUsers = async () => {
@@ -55,8 +58,14 @@ export default function Users() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1)
-    loadUsers()
+    if (search === "") {
+
+      loadUsers()
+      return
+    }
+
+    let usersSearch = users.filter((u) => u.name.toLowerCase().includes(search))
+    setUsers(usersSearch)
   }
 
   const handleCreate = () => {
@@ -82,6 +91,33 @@ export default function Users() {
       showError(msg)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleGenerateToken = async () => {
+    if (!tokenUser) return
+    setIsSubmitting(true)
+    try {
+      const response = await usersService.generateToken(tokenUser.id)
+      setGeneratedToken(response.token)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao gerar token'
+      showError(msg)
+      setTokenUser(null)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleCopyToken = async () => {
+    if (generatedToken) {
+      try {
+        await navigator.clipboard.writeText(generatedToken)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 3000)
+      } catch {
+        showError('Erro ao copiar token')
+      }
     }
   }
 
@@ -162,6 +198,7 @@ export default function Users() {
               onEdit={handleEdit}
               onToggleActive={(u) => setToggleUser(u)}
               onDelete={(u) => setDeleteUser(u)}
+              onGenerateToken={(u) => setTokenUser(u)}
             />
           ))}
         </div>
@@ -217,6 +254,67 @@ export default function Users() {
             <AlertDialogAction onClick={handleDelete} disabled={isSubmitting} variant="destructive" size="default">
               {isSubmitting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Generate Token Dialog */}
+      <AlertDialog open={!!tokenUser || !!generatedToken} onOpenChange={(open) => { if (!open) { setTokenUser(null); setGeneratedToken(null); setCopied(false); } }}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Token de API</AlertDialogTitle>
+            <AlertDialogDescription>
+              {!generatedToken ? (
+                <>Deseja gerar um token de API para o usuário endpoint <strong>{tokenUser?.name} {tokenUser?.surname}</strong>?</>
+              ) : (
+                <span className="text-amber-600 font-medium">
+                  ⚠️ Salve este token agora. Ele não será exibido novamente!
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {generatedToken && (
+            <div className="space-y-3">
+              <div className="relative">
+                <pre className="text-xs bg-muted p-3 rounded border overflow-x-auto whitespace-pre-wrap break-all font-mono">
+                  {generatedToken}
+                </pre>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={handleCopyToken}
+              >
+                {copied ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                    Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copiar Token
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          <AlertDialogFooter>
+            {!generatedToken ? (
+              <>
+                <AlertDialogCancel onClick={() => { setTokenUser(null); setCopied(false); }}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleGenerateToken} disabled={isSubmitting} size="default">
+                  {isSubmitting ? 'Gerando...' : 'Gerar Token'}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={() => { setTokenUser(null); setGeneratedToken(null); setCopied(false); }} size="default">
+                Fechar
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

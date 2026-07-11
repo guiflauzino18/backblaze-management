@@ -28,6 +28,10 @@ type RefreshTokenResponse struct {
 	ExpiresIn    int64  `json:"expires_in"`
 }
 
+type GenerateTokenResponse struct {
+	Token string `json:"token"`
+}
+
 type Session struct {
 	ID           uuid.UUID  `json:"id"`
 	UserID       uuid.UUID  `json:"user_id"`

@@ -25,6 +25,9 @@ type Config struct {
 	// Analytics Configuration
 	AnalyticsInterval time.Duration
 	AnalyticsWorkers  int
+	// Execution Logs Configuration
+	LogRetentionDays   int
+	LogCleanupInterval time.Duration
 }
 
 func Load() (*Config, error) {
@@ -38,6 +41,12 @@ func Load() (*Config, error) {
 	}
 
 	analyticsWorkers := getEnvAsInt("ANALYTICS_WORKERS", 4)
+
+	logRetentionDays := getEnvAsInt("LOG_RETENTION_DAYS", 7)
+	logCleanupInterval, err := time.ParseDuration(getEnv("LOG_CLEANUP_INTERVAL", "24h"))
+	if err != nil {
+		logCleanupInterval = 24 * time.Hour
+	}
 
 	cfg := &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -56,6 +65,9 @@ func Load() (*Config, error) {
 		// Analytics Configuration
 		AnalyticsInterval: analyticsInterval,
 		AnalyticsWorkers:  analyticsWorkers,
+		// Execution Logs Configuration
+		LogRetentionDays:   logRetentionDays,
+		LogCleanupInterval: logCleanupInterval,
 	}
 
 	if cfg.DBPassword == "" {

@@ -12,7 +12,7 @@ import (
 	"b2-management/internal/repository"
 )
 
-func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnalyticsRepository, *repository.ObjectIndexRepository) {
+func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnalyticsRepository, *repository.ObjectIndexRepository, *repository.ExecutionLogRepository) {
 	r := gin.Default()
 
 	// CORS
@@ -28,14 +28,16 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 	sessionRepo := repository.NewSessionRepository(db)
 	bucketAnalyticsRepo := repository.NewBucketAnalyticsRepository(db)
 	objectIndexRepo := repository.NewObjectIndexRepository(db)
+	executionLogRepo := repository.NewExecutionLogRepository(db)
 
 	// Handlers
 	healthHandler := handlers.NewHealthHandler(db)
 	authHandler := handlers.NewAuthHandler(userRepo, sessionRepo, cfg.JWTSecret)
-	userHandler := handlers.NewUserHandler(userRepo)
+	userHandler := handlers.NewUserHandler(userRepo, cfg.JWTSecret)
 	bucketHandler := handlers.NewBucketHandler()
 	analyticsHandler := handlers.NewAnalyticsHandler(bucketAnalyticsRepo)
 	objectSearchHandler := handlers.NewObjectSearchHandler(objectIndexRepo)
+	executionLogHandler := handlers.NewExecutionLogHandler(executionLogRepo)
 
 	// API routes
 	v1 := r.Group("/api/v1")
@@ -63,6 +65,7 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 				admin.PUT("/:id", userHandler.Update)
 				admin.DELETE("/:id", userHandler.Delete)
 				admin.PATCH("/:id/toggle-active", userHandler.ToggleActive)
+				admin.POST("/:id/generate-token", userHandler.GenerateToken)
 			}
 
 			// Analytics (read for all authenticated users)
@@ -81,6 +84,21 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 				buckets.GET("/:name/storage", bucketHandler.GetStorageMetrics)
 			}
 
+			// Execution Logs - Create (endpoint and admin)
+			endpointOrAdmin := protected.Group("/executions")
+			endpointOrAdmin.Use(middleware.RoleMiddleware("admin", "endpoint"))
+			{
+				endpointOrAdmin.POST("/logs", executionLogHandler.CreateLog)
+			}
+
+			// Execution Logs - List (admin only)
+			executionsAdmin := protected.Group("/executions")
+			executionsAdmin.Use(middleware.RoleMiddleware("admin"))
+			{
+				executionsAdmin.GET("/logs", executionLogHandler.ListLogs)
+				executionsAdmin.GET("/buckets", executionLogHandler.ListBuckets)
+			}
+
 			// Bucket management (admin only)
 			bucketAdmin := protected.Group("/buckets")
 			bucketAdmin.Use(middleware.RoleMiddleware("admin"))
@@ -95,5 +113,5 @@ func Setup(db *sql.DB, cfg *config.Config) (*gin.Engine, *repository.BucketAnaly
 		}
 	}
 
-	return r, bucketAnalyticsRepo, objectIndexRepo
+	return r, bucketAnalyticsRepo, objectIndexRepo, executionLogRepo
 }

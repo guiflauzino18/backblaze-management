@@ -46,11 +46,15 @@ func main() {
 	}
 
 	// Setup router
-	r, analyticsRepo, objectRepo := router.Setup(db, cfg)
+	r, analyticsRepo, objectRepo, executionLogRepo := router.Setup(db, cfg)
 
 	// Start analytics worker pool (analytics + object indexing)
 	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, analyticsRepo, objectRepo)
 	workerPool.Start()
+
+	// Start log cleanup worker
+	logCleanup := analytics.NewLogCleanup(cfg.LogRetentionDays, cfg.LogCleanupInterval, executionLogRepo)
+	logCleanup.Start()
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -60,6 +64,7 @@ func main() {
 		<-quit
 		log.Println("Shutting down server...")
 		workerPool.Stop()
+		logCleanup.Stop()
 		db.Close()
 		os.Exit(0)
 	}()

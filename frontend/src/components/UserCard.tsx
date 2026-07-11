@@ -1,4 +1,4 @@
-import { MoreVertical, Pencil, Ban, Trash2, UserCheck } from 'lucide-react'
+import { MoreVertical, Pencil, Ban, Trash2, UserCheck, Key } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -17,9 +17,10 @@ interface UserCardProps {
   onEdit: (user: UserInfo) => void
   onToggleActive: (user: UserInfo) => void
   onDelete: (user: UserInfo) => void
+  onGenerateToken?: (user: UserInfo) => void
 }
 
-export default function UserCard({ user, onEdit, onToggleActive, onDelete }: UserCardProps) {
+export default function UserCard({ user, onEdit, onToggleActive, onDelete, onGenerateToken }: UserCardProps) {
   const getInitials = () => {
     return `${user.name.charAt(0)}${user.surname.charAt(0)}`.toUpperCase()
   }
@@ -29,7 +30,9 @@ export default function UserCard({ user, onEdit, onToggleActive, onDelete }: Use
   }
 
   const getRoleLabel = (role: string) => {
-    return role === 'admin' ? 'Admin' : 'Usuário'
+    if (role === 'admin') return 'Admin'
+    if (role === 'endpoint') return 'Endpoint'
+    return 'Usuário'
   }
 
   return (
@@ -88,6 +91,15 @@ export default function UserCard({ user, onEdit, onToggleActive, onDelete }: Use
                   </>
                 )}
               </DropdownMenuItem>
+              {user.role === 'endpoint' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onGenerateToken?.(user)}>
+                    <Key className="mr-2 h-4 w-4" />
+                    Gerar Token de API
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onDelete(user)} className="text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
