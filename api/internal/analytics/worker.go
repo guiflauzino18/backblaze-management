@@ -20,6 +20,7 @@ type WorkerPool struct {
 	workers        int
 	interval       time.Duration
 	enableIndexing bool
+	excludeBuckets map[string]bool
 	analyticsRepo  *repository.BucketAnalyticsRepository
 	objectRepo     *repository.ObjectIndexRepository
 	ctx            context.Context
@@ -28,12 +29,20 @@ type WorkerPool struct {
 }
 
 // NewWorkerPool cria um novo pool de workers
-func NewWorkerPool(workers int, interval time.Duration, enableIndexing bool, analyticsRepo *repository.BucketAnalyticsRepository, objectRepo *repository.ObjectIndexRepository) *WorkerPool {
+func NewWorkerPool(workers int, interval time.Duration, enableIndexing bool, excludeBuckets []string, analyticsRepo *repository.BucketAnalyticsRepository, objectRepo *repository.ObjectIndexRepository) *WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Converte slice para map para lookup eficiente
+	excludeMap := make(map[string]bool, len(excludeBuckets))
+	for _, b := range excludeBuckets {
+		excludeMap[b] = true
+	}
+
 	return &WorkerPool{
 		workers:        workers,
 		interval:       interval,
 		enableIndexing: enableIndexing,
+		excludeBuckets: excludeMap,
 		analyticsRepo:  analyticsRepo,
 		objectRepo:     objectRepo,
 		ctx:            ctx,
@@ -161,10 +170,14 @@ func (wp *WorkerPool) worker(jobs chan bucketJob, results chan struct{}) {
 			log.Printf("[Analytics] Bucket %s: %d objects, %d bytes", job.name, objectCount, totalSize)
 		}
 
-		// 2. Indexa objetos do bucket (apenas se habilitado)
+		// 2. Indexa objetos do bucket (apenas se habilitado e bucket não estiver na lista de exclusão)
 		if wp.enableIndexing {
-			if err := wp.indexBucketObjects(job.name); err != nil {
-				log.Printf("[Analytics] Failed to index objects for bucket %s: %v", job.name, err)
+			if wp.excludeBuckets[job.name] {
+				log.Printf("[Analytics] Bucket %s is in exclude list, skipping indexing", job.name)
+			} else {
+				if err := wp.indexBucketObjects(job.name); err != nil {
+					log.Printf("[Analytics] Failed to index objects for bucket %s: %v", job.name, err)
+				}
 			}
 		} else {
 			log.Printf("[Analytics] Indexing disabled for bucket %s", job.name)

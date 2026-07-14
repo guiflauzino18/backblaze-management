@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -23,9 +24,10 @@ type Config struct {
 	AWSRegion    string
 	AWSEndpoint  string
 	// Analytics Configuration
-	AnalyticsInterval time.Duration
-	AnalyticsWorkers  int
-	EnableIndexing    bool
+	AnalyticsInterval      time.Duration
+	AnalyticsWorkers       int
+	EnableIndexing         bool
+	IndexingExcludeBuckets []string
 	// Execution Logs Configuration
 	LogRetentionDays   int
 	LogCleanupInterval time.Duration
@@ -43,6 +45,7 @@ func Load() (*Config, error) {
 
 	analyticsWorkers := getEnvAsInt("ANALYTICS_WORKERS", 2)
 	enableIndexing := getEnv("ENABLE_INDEXING", "true") == "true"
+	indexingExcludeBuckets := getEnvAsSlice("INDEXING_EXCLUDE_BUCKETS", ",")
 
 	logRetentionDays := getEnvAsInt("LOG_RETENTION_DAYS", 7)
 	logCleanupInterval, err := time.ParseDuration(getEnv("LOG_CLEANUP_INTERVAL", "24h"))
@@ -65,9 +68,10 @@ func Load() (*Config, error) {
 		AWSEndpoint:  getEnv("AWS_ENDPOINT", ""),
 		AWSRegion:    getEnv("AWS_REGION", ""),
 		// Analytics Configuration
-		AnalyticsInterval: analyticsInterval,
-		AnalyticsWorkers:  analyticsWorkers,
-		EnableIndexing:    enableIndexing,
+		AnalyticsInterval:      analyticsInterval,
+		AnalyticsWorkers:       analyticsWorkers,
+		EnableIndexing:         enableIndexing,
+		IndexingExcludeBuckets: indexingExcludeBuckets,
 		// Execution Logs Configuration
 		LogRetentionDays:   logRetentionDays,
 		LogCleanupInterval: logCleanupInterval,
@@ -123,4 +127,20 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return defaultValue
 	}
 	return value
+}
+
+func getEnvAsSlice(key, separator string) []string {
+	valueStr := getEnv(key, "")
+	if valueStr == "" {
+		return []string{}
+	}
+	parts := strings.Split(valueStr, separator)
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		trimmed := strings.TrimSpace(p)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
