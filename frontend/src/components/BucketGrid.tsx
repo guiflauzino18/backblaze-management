@@ -61,7 +61,7 @@ export default function BucketGrid({ isAdmin, onCreateBucket, onEnterBucket, onD
   }
 
   const filteredBuckets = buckets.filter((bucket) =>
-    bucket.Name.includes(searchTerm.toLowerCase())
+    bucket.Name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {
