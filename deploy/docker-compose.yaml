@@ -52,6 +52,7 @@ services:
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
       ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
+      INDEXING_EXCLUDE_BUCKETS: ${INDEXING_EXCLUDE_BUCKETS:-}
     command: ["./seed"]
     depends_on:
       migrations:
@@ -77,6 +78,7 @@ services:
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
       ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
+      INDEXING_EXCLUDE_BUCKETS: ${INDEXING_EXCLUDE_BUCKETS:-}
     ports:
       - "8080:8080"
     depends_on:
