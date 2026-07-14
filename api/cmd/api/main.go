@@ -49,7 +49,7 @@ func main() {
 	r, analyticsRepo, objectRepo, executionLogRepo := router.Setup(db, cfg)
 
 	// Start analytics worker pool (analytics + object indexing)
-	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, analyticsRepo, objectRepo)
+	workerPool := analytics.NewWorkerPool(cfg.AnalyticsWorkers, cfg.AnalyticsInterval, cfg.EnableIndexing, analyticsRepo, objectRepo)
 	workerPool.Start()
 
 	// Start log cleanup worker

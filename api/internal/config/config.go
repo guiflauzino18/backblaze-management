@@ -25,6 +25,7 @@ type Config struct {
 	// Analytics Configuration
 	AnalyticsInterval time.Duration
 	AnalyticsWorkers  int
+	EnableIndexing    bool
 	// Execution Logs Configuration
 	LogRetentionDays   int
 	LogCleanupInterval time.Duration
@@ -35,12 +36,13 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 	_ = godotenv.Load("../.env")
 
-	analyticsInterval, err := time.ParseDuration(getEnv("ANALYTICS_INTERVAL", "4h"))
+	analyticsInterval, err := time.ParseDuration(getEnv("ANALYTICS_INTERVAL", "24h"))
 	if err != nil {
-		analyticsInterval = 4 * time.Hour
+		analyticsInterval = 24 * time.Hour
 	}
 
-	analyticsWorkers := getEnvAsInt("ANALYTICS_WORKERS", 4)
+	analyticsWorkers := getEnvAsInt("ANALYTICS_WORKERS", 2)
+	enableIndexing := getEnv("ENABLE_INDEXING", "true") == "true"
 
 	logRetentionDays := getEnvAsInt("LOG_RETENTION_DAYS", 7)
 	logCleanupInterval, err := time.ParseDuration(getEnv("LOG_CLEANUP_INTERVAL", "24h"))
@@ -65,6 +67,7 @@ func Load() (*Config, error) {
 		// Analytics Configuration
 		AnalyticsInterval: analyticsInterval,
 		AnalyticsWorkers:  analyticsWorkers,
+		EnableIndexing:    enableIndexing,
 		// Execution Logs Configuration
 		LogRetentionDays:   logRetentionDays,
 		LogCleanupInterval: logCleanupInterval,

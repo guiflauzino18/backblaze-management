@@ -17,25 +17,27 @@ type bucketJob struct {
 
 // WorkerPool gerencia o pool de workers para coleta de dados analíticos e indexação de objetos
 type WorkerPool struct {
-	workers       int
-	interval      time.Duration
-	analyticsRepo *repository.BucketAnalyticsRepository
-	objectRepo    *repository.ObjectIndexRepository
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
+	workers        int
+	interval       time.Duration
+	enableIndexing bool
+	analyticsRepo  *repository.BucketAnalyticsRepository
+	objectRepo     *repository.ObjectIndexRepository
+	ctx            context.Context
+	cancel         context.CancelFunc
+	wg             sync.WaitGroup
 }
 
 // NewWorkerPool cria um novo pool de workers
-func NewWorkerPool(workers int, interval time.Duration, analyticsRepo *repository.BucketAnalyticsRepository, objectRepo *repository.ObjectIndexRepository) *WorkerPool {
+func NewWorkerPool(workers int, interval time.Duration, enableIndexing bool, analyticsRepo *repository.BucketAnalyticsRepository, objectRepo *repository.ObjectIndexRepository) *WorkerPool {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &WorkerPool{
-		workers:       workers,
-		interval:      interval,
-		analyticsRepo: analyticsRepo,
-		objectRepo:    objectRepo,
-		ctx:           ctx,
-		cancel:        cancel,
+		workers:        workers,
+		interval:       interval,
+		enableIndexing: enableIndexing,
+		analyticsRepo:  analyticsRepo,
+		objectRepo:     objectRepo,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 }
 
@@ -159,9 +161,13 @@ func (wp *WorkerPool) worker(jobs chan bucketJob, results chan struct{}) {
 			log.Printf("[Analytics] Bucket %s: %d objects, %d bytes", job.name, objectCount, totalSize)
 		}
 
-		// 2. Indexa objetos do bucket
-		if err := wp.indexBucketObjects(job.name); err != nil {
-			log.Printf("[Analytics] Failed to index objects for bucket %s: %v", job.name, err)
+		// 2. Indexa objetos do bucket (apenas se habilitado)
+		if wp.enableIndexing {
+			if err := wp.indexBucketObjects(job.name); err != nil {
+				log.Printf("[Analytics] Failed to index objects for bucket %s: %v", job.name, err)
+			}
+		} else {
+			log.Printf("[Analytics] Indexing disabled for bucket %s", job.name)
 		}
 	}
 }

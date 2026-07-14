@@ -51,6 +51,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
+      ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
     command: ["./seed"]
     depends_on:
       migrations:
@@ -75,6 +76,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
+      ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
     ports:
       - "8080:8080"
     depends_on:
