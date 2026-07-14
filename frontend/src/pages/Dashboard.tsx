@@ -90,10 +90,10 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4">
       {/* Main Content */}
       <main className=''>
-        <div className="mb-8 border-b py-3">
+        <div className="mb-8 border-b">
           <h2 className="text-2xl font-heading font-bold">Dashboard</h2>
           <p className="text-muted-foreground">
             Bem-vindo ao B2 Management, {user?.name}! Aqui está um resumo do seu storage.

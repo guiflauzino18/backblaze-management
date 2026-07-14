@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     container_name: b2management-postgres
     environment:
       POSTGRES_USER: b2management
@@ -20,6 +21,7 @@ services:
 
   migrations:
     image: migrate/migrate
+    restart: on-failure:5
     container_name: b2management-migrations
     depends_on:
       postgres:
@@ -35,6 +37,7 @@ services:
 
   seed:
     image: guiflauzino18/b2management-api:latest
+    restart: on-failure:5
     container_name: b2management-seed
     environment:
       DB_HOST: postgres
@@ -48,6 +51,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
+      ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
     command: ["./seed"]
     depends_on:
       migrations:
@@ -57,6 +61,7 @@ services:
 
   api:
     image: guiflauzino18/b2management-api:latest
+    restart: unless-stopped
     container_name: b2management-api
     environment:
       DB_HOST: postgres
@@ -71,6 +76,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_REGION: ${AWS_REGION}
+      ENABLE_INDEXING: ${ENABLE_INDEXING:-true}
     ports:
       - "8080:8080"
     depends_on:
@@ -81,6 +87,7 @@ services:
 
   frontend:
     image: guiflauzino18/b2management-frontend:latest
+    restart: unless-stopped
     container_name: b2management-frontend
     ports:
       - "80:80"

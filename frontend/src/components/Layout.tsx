@@ -15,6 +15,7 @@ import {
   BarChart3,
   Users,
   HardDrive,
+  FileText,
   LogOut,
   Menu,
   ChevronLeft,
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Buckets', href: '/buckets', icon: HardDrive },
   { name: 'Usuários', href: '/users', icon: Users },
+  { name: 'Relatórios', href: '/reports', icon: FileText },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -32,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
 
   const handleLogout = async () => {
     await logout()
@@ -166,7 +168,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <footer className='border-t text-center p-3 text-sm mt-30'>
         <span>
-          v1.2.0 {new Date().getFullYear()}
+          v1.3.0 {new Date().getFullYear()}
         </span>
       </footer>
     </div>

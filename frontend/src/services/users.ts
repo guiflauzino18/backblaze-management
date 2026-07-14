@@ -114,4 +114,9 @@ export const usersService = {
     request<UserInfo>(`/users/${id}/toggle-active`, {
       method: 'PATCH',
     }),
+
+  generateToken: (id: string) =>
+    request<{ token: string }>(`/users/${id}/generate-token`, {
+      method: 'POST',
+    }),
 }

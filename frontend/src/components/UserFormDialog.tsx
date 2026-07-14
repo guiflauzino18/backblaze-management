@@ -172,6 +172,7 @@ export default function UserFormDialog({ open, onOpenChange, user, onSuccess }: 
                 <SelectContent>
                   <SelectItem value="user">Usuário</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="endpoint">Endpoint</SelectItem>
                 </SelectContent>
               </Select>
             </div>

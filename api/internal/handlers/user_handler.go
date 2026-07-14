@@ -3,7 +3,9 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
+	"b2-management/internal/middleware"
 	"b2-management/internal/models"
 	"b2-management/internal/repository"
 
@@ -12,11 +14,12 @@ import (
 )
 
 type UserHandler struct {
-	userRepo *repository.UserRepository
+	userRepo  *repository.UserRepository
+	jwtSecret string
 }
 
-func NewUserHandler(userRepo *repository.UserRepository) *UserHandler {
-	return &UserHandler{userRepo: userRepo}
+func NewUserHandler(userRepo *repository.UserRepository, jwtSecret string) *UserHandler {
+	return &UserHandler{userRepo: userRepo, jwtSecret: jwtSecret}
 }
 
 func (h *UserHandler) Create(c *gin.Context) {
@@ -171,4 +174,38 @@ func (h *UserHandler) ToggleActive(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user.ToResponse())
+}
+
+// GenerateToken generates an API token for endpoint users (never expires - 100 years)
+func (h *UserHandler) GenerateToken(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+
+	user, err := h.userRepo.FindByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+
+	if user.Role != "endpoint" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "token can only be generated for endpoint users"})
+		return
+	}
+
+	// Generate token with 100 years expiration (practically never expires)
+	token, err := middleware.GenerateToken(user.ID, user.Role, h.jwtSecret, 100*365*24*time.Hour)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.GenerateTokenResponse{Token: token})
 }

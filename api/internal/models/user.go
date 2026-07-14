@@ -26,7 +26,7 @@ type CreateUserRequest struct {
 	Surname  string `json:"surname" binding:"required,min=2,max=255"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
-	Role     string `json:"role" binding:"required,oneof=admin user"`
+	Role     string `json:"role" binding:"required,oneof=admin user endpoint"`
 	Gender   string `json:"gender" binding:"required,oneof=male female neutral"`
 }
 
@@ -34,7 +34,7 @@ type UpdateUserRequest struct {
 	Name    string `json:"name" binding:"omitempty,min=2,max=255"`
 	Surname string `json:"surname" binding:"omitempty,min=2,max=255"`
 	Email   string `json:"email" binding:"omitempty,email"`
-	Role    string `json:"role" binding:"omitempty,oneof=admin user"`
+	Role    string `json:"role" binding:"omitempty,oneof=admin user endpoint"`
 	Gender  string `json:"gender" binding:"omitempty,oneof=male female neutral"`
 }
 

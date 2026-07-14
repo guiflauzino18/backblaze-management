@@ -32,7 +32,7 @@ COPY --from=builder /app/migrations ./migrations
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+HEALTHCHECK --interval=60s --timeout=15s --retries=5 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
 
 CMD ["./server"]
