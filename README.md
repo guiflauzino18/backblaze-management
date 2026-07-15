@@ -6,6 +6,7 @@ API para gerenciamento de armazenamento Backblaze B2 usando a API S3. Também fu
 - Docker Engine
 - Docker Compose
 - Git
+- make
 - Liberação das portas 80 e 8080 (ou outra se foi alterada no .env) no firewall ou selinux
 
 ## Instalação
@@ -27,7 +28,7 @@ docker compose up -d
 
 ## Atualização
 
-OBS: FAÇA UM BACKUP DO ARQUIVO .ENV POIS ELE PODE SER SUBSTIRUÍDO.
+OBS: FAÇA UM BACKUP DO ARQUIVO .ENV POIS ELE PODE SER SUBSTITUÍDO.
 
 Siga os passos abaixos para atualizar a aplicação:
 
