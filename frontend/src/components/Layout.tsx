@@ -168,7 +168,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <footer className='border-t text-center p-3 text-sm mt-30'>
         <span>
-          v1.3.3 {new Date().getFullYear()}
+          v1.3.4 {new Date().getFullYear()}
         </span>
       </footer>
     </div>
