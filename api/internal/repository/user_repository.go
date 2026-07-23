@@ -236,10 +236,6 @@ func (r *UserRepository) ToggleActive(id uuid.UUID, currentUserID uuid.UUID) (*m
 
 func generateAvatar(email, gender string) string {
 	style := "adventurer"
-	if gender == "female" {
-		style = "adventurer"
-	} else if gender == "male" {
-		style = "adventurer"
-	}
-	return fmt.Sprintf("https://api.dicebear.com/9.x/%s/svg?seed=%s", style, email)
+
+	return fmt.Sprintf("https://api.dicebear.com/9.x/%s/svg?seed=%s", style, gender)
 }

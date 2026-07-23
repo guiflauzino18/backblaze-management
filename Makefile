@@ -82,3 +82,9 @@ dev-frontend:
 
 kill:
 	kill -9 $(lsof -t -i:8080)
+
+update:
+	git pull
+	cd deploy
+	docker compose pull
+	docker compose restart
